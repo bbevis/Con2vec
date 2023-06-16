@@ -10,7 +10,7 @@ import numpy as np
 
 from deepface import DeepFace
 
-cap = cv2.VideoCapture("video_sync.mov")
+cap = cv2.VideoCapture("test_video.mov")
 fps = cap.get(cv2.CAP_PROP_FPS)
 
 print(cap, fps)
@@ -67,6 +67,7 @@ results = []
 timestamps = []
 face_blendshapes_results = []
 hand_gesture_results = []
+topemotion_results = []
 while True:
 
     ret, frame = cap.read()
