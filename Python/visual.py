@@ -14,25 +14,14 @@ class visual_features:
     
     def __init__(self, data, faceblend_model, handgesture_model):
         
-        self.cap = cv2.VideoCapture(data)
-        # self.fps = cv2.VideoCapture(data).get(cv2.CAP_PROP_FPS)
-        
+        self.cap = cv2.VideoCapture(data)        
         self.BaseOptions = mp.tasks.BaseOptions
-        self.VisionRunningMode = mp.tasks.vision.RunningMode
-        
+        self.VisionRunningMode = mp.tasks.vision.RunningMode        
         self.pt_blendshape = faceblend_model
         self.pt_handgesture = handgesture_model
-        
-        # cap = cv2.VideoCapture("Data/test_video.mov")
-        # fps = cap.get(cv2.CAP_PROP_FPS)
-
-        # BaseOptions = mp.tasks.BaseOptions
-        # VisionRunningMode = mp.tasks.vision.RunningMode
 
     def face_cue_detector(self, mp_image):
 
-        # FaceLandmarker = mp.tasks.vision.FaceLandmarker
-        # FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
 
         base_options = python.BaseOptions(model_asset_path=self.pt_blendshape)
         options = vision.FaceLandmarkerOptions(base_options=base_options,
@@ -54,9 +43,6 @@ class visual_features:
 
 
     def hand_gesture_detector(self, mp_image):
-
-        GestureRecognizer = mp.tasks.vision.GestureRecognizer
-        GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
 
         options = vision.GestureRecognizerOptions(
             base_options=self.BaseOptions(model_asset_path=self.pt_handgesture),
