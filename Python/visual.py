@@ -1,14 +1,17 @@
+import os
+# os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+
 import pandas as pd
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 import cv2
-
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 import numpy as np
-
 from deepface import DeepFace
+
+import moviepy.editor as moviepy
 
 class visual_features:
     
@@ -28,7 +31,7 @@ class visual_features:
                                             output_face_blendshapes=True,
                                             output_facial_transformation_matrixes=True,
                                             running_mode=self.VisionRunningMode.IMAGE,
-                                            num_faces = 2)
+                                            num_faces = 1)
 
         
         detector = vision.FaceLandmarker.create_from_options(options)
@@ -107,10 +110,14 @@ class visual_features:
         return resAll
 
 if __name__ == '__main__':
+    
+    # video = moviepy.VideoFileClip('Data/1710526842273-c9be3e51-d151-47bd-a7fe-689236f35c0d-cam-video-1710526843251')
+    # video.write_videofile('Data/test1.mp4')
 
-    vf = visual_features('Data/test_video.mov',
+    vf = visual_features('Data/1710526842273-c9be3e51-d151-47bd-a7fe-689236f35c0d-cam-video-1710526843251',
                          'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
                          'Pretrained_models/gesture_recognizer.task')
     
+    
     resAll = vf.collect_outputs()
-    resAll.to_csv('Output/test_outputs.csv', index=False)
+    resAll.to_csv('Output/test_output_super1.csv', index=False)
