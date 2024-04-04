@@ -1,5 +1,5 @@
 import os
-# os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
 import pandas as pd
 import mediapipe as mp
@@ -114,10 +114,10 @@ if __name__ == '__main__':
     # video = moviepy.VideoFileClip('Data/1710526842273-c9be3e51-d151-47bd-a7fe-689236f35c0d-cam-video-1710526843251')
     # video.write_videofile('Data/test1.mp4')
 
-    vf = visual_features('Data/1710526842273-c9be3e51-d151-47bd-a7fe-689236f35c0d-cam-video-1710526843251',
+    vf = visual_features('Video_data_super_Imperial/20240313_1230_super_Y5CDSG/1710526842273-bcd82371-6c86-46bd-83da-c3fdd11496c1-cam-video-1710526864913',
                          'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
                          'Pretrained_models/gesture_recognizer.task')
     
     
     resAll = vf.collect_outputs()
-    resAll.to_csv('Output/test_output_super1.csv', index=False)
+    resAll.to_csv('Output/test_output_super2.csv', index=False)

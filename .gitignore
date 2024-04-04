@@ -5,6 +5,7 @@ __pycache__/
 
 # Folders
 Data/
+Video_data_super_Imperial/
 
 # C extensions
 *.so
