@@ -38,9 +38,18 @@ class visual_features:
         
         face_cue_detection_result = detector.detect(mp_image)
         
-        face_blendshapes = face_cue_detection_result.face_blendshapes[0]
-        names = [face_blendshapes_category.category_name for face_blendshapes_category in face_blendshapes]
-        scores = [face_blendshapes_category.score for face_blendshapes_category in face_blendshapes]
+        print('detection result: ', face_cue_detection_result)
+        
+        print('face blendshape ', face_cue_detection_result.face_blendshapes)
+        print('length face blendshape: ', len(face_cue_detection_result.face_blendshapes))
+        
+        if len(face_cue_detection_result.face_blendshapes) > 0:
+            face_blendshapes = face_cue_detection_result.face_blendshapes[0]
+            names = [face_blendshapes_category.category_name for face_blendshapes_category in face_blendshapes]
+            scores = [face_blendshapes_category.score for face_blendshapes_category in face_blendshapes]
+        else:
+            names = ['no_face_detected']
+            scores = ['']
         
         return names, scores
 
@@ -71,7 +80,7 @@ class visual_features:
         
         return names, scores
 
-    def collect_outputs(self):
+    def raw_outputs(self):
         
         timestamps = []
         face_blendshapes_results = []
@@ -86,6 +95,7 @@ class visual_features:
                 break
             
             timestamp_ms = self.cap.get(cv2.CAP_PROP_POS_MSEC)
+            print('tiimestamp in seconds: ', timestamp_ms/1000)
             timestamps.append(timestamp_ms)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
             
@@ -93,6 +103,7 @@ class visual_features:
             hand_gesture_results.append(hand_gestures)
             
             face_blendshapes_names, face_blendshapes_scores = self.face_cue_detector(mp_image)
+            print(face_blendshapes_scores)
             face_blendshapes_results.append(face_blendshapes_scores)
 
             emotion_name, emotion_scores = self.emotion_detector(frame)
@@ -113,11 +124,25 @@ if __name__ == '__main__':
     
     # video = moviepy.VideoFileClip('Data/1710526842273-c9be3e51-d151-47bd-a7fe-689236f35c0d-cam-video-1710526843251')
     # video.write_videofile('Data/test1.mp4')
+    
+    # /Users/bb320/Library/CloudStorage/GoogleDrive-burint@bnmanalytics.com/My Drive/Imperial/03_TeamofRivals/Con2vec/Data/super_icbs/20240312_1629_super_5KHZ83
+    
+    # base_path = '/Users/bb320/Library/CloudStorage/GoogleDrive-burint@bnmanalytics.com/My Drive/Imperial/03_TeamofRivals/Con2vec/'
+    dirpath = 'Data/super_icbs'
+    group = '20240312_1629_super_5KHZ83'
+    filename = '1710326137265-4144e390-caf9-40c5-9424-9cc5f734cbb6-cam-video-1710326138273'
+    filename_path =  os.path.join(dirpath, group, filename)
 
-    vf = visual_features('Video_data_super_Imperial/20240313_1230_super_Y5CDSG/1710526842273-bcd82371-6c86-46bd-83da-c3fdd11496c1-cam-video-1710526864913',
+    # print("file exists?", os.path.exists(file_path))
+    
+    print('current directory: ', os.getcwd())
+    print('filepath: ', filename_path)
+    print("file exists?", os.path.exists(filename_path))
+
+    vf = visual_features(filename_path,
                          'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
                          'Pretrained_models/gesture_recognizer.task')
     
     
-    resAll = vf.collect_outputs()
-    resAll.to_csv('Output/test_output_super2.csv', index=False)
+    resAll = vf.raw_outputs()
+    resAll.to_csv('Output/super_icbs/test_output_super2.csv', index=False)
