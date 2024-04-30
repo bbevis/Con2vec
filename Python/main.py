@@ -58,22 +58,27 @@ def extract_video_raw(data_dir, video_filenames):
 
     for dirpath, dirnames, filenames in os.walk(data_dir):
         for filename in filenames:
-            print(filename)
             if filename in video_filenames:
                 file_path = os.path.join(dirpath, filename)
-                print(2)
-                print(file_path)
                 vf = visual.visual_features(file_path,
                             'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
                             'Pretrained_models/gesture_recognizer.task')
                 resAll = vf.collect_outputs()
                 resAll.to_csv('Output/video/' + filename + '.csv', index=False)
 
-data_directory = 'Data_super_icbs/'  # Change this to the directory you want to start from
+def video_files(size_threshold, below = True):
+    
+    # get list of video files only within a datasize
+    if below == True:
+        return metadata['filename'][(metadata['is_video'] == 1) & (metadata['file_size'] <= size_threshold)].to_list()
+    elif below == False:
+        return metadata['filename'][(metadata['is_video'] == 1) & (metadata['file_size'] >= size_threshold)].to_list()
+
+data_directory = 'Data/Data_super_icbs/'  # Change this to the directory you want to start from
 metadata = get_all_files_with_metadata(data_directory)
 # Save the DataFrame to a CSV file
 metadata.to_csv('./Output/files_metadata.csv', index=False)
 
-# get list of video files only
-video_filenames = metadata['filename'][metadata['is_video'] == 1].to_list()
-# extract_video_raw(data_directory, video_filenames)
+video_filenames = video_files(10)
+print(video_filenames)
+extract_video_raw(data_directory, video_filenames)
