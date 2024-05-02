@@ -38,10 +38,10 @@ class visual_features:
         
         face_cue_detection_result = detector.detect(mp_image)
         
-        print('detection result: ', face_cue_detection_result)
+        # print('detection result: ', face_cue_detection_result)
         
-        print('face blendshape ', face_cue_detection_result.face_blendshapes)
-        print('length face blendshape: ', len(face_cue_detection_result.face_blendshapes))
+        # print('face blendshape ', face_cue_detection_result.face_blendshapes)
+        # print('length face blendshape: ', len(face_cue_detection_result.face_blendshapes))
         
         if len(face_cue_detection_result.face_blendshapes) > 0:
             face_blendshapes = face_cue_detection_result.face_blendshapes[0]
