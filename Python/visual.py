@@ -128,7 +128,7 @@ if __name__ == '__main__':
     # /Users/bb320/Library/CloudStorage/GoogleDrive-burint@bnmanalytics.com/My Drive/Imperial/03_TeamofRivals/Con2vec/Data/super_icbs/20240312_1629_super_5KHZ83
     
     # base_path = '/Users/bb320/Library/CloudStorage/GoogleDrive-burint@bnmanalytics.com/My Drive/Imperial/03_TeamofRivals/Con2vec/'
-    dirpath = 'Data/super_icbs'
+    dirpath = 'Data_super_icbs'
     group = '20240312_1629_super_5KHZ83'
     filename = '1710326137265-4144e390-caf9-40c5-9424-9cc5f734cbb6-cam-video-1710326138273'
     filename_path =  os.path.join(dirpath, group, filename)
