@@ -1,13 +1,12 @@
 import os
 os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+# os.environ["IMAGEIO_FFMPEG_EXE"] = ".venv/lib/python3.10/site-packages/ffmpeg"
 
 import numpy as np
 import ffmpeg
 import librosa
 import matplotlib.pyplot as plt
-
-
-
+import scipy.io as sio
 
 dirpath = 'Data_super_icbs'
 group = '20240312_1629_super_5KHZ83'
@@ -16,9 +15,16 @@ filename_path =  os.path.join(dirpath, group, filename)
 
 print(filename_path)
 
-y, sr = librosa.load(filename_path, sr = 32000)
+import audiofile
 
+signal, sampling_rate = audiofile.read(filename_path)
 
+# y, sr = librosa.load(filename_path)
+
+# filename = librosa.example('nutcracker')
+# y, sr = librosa.load(filename)
+# tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+# print(tempo)
 # tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
 # print(tempo)
 
