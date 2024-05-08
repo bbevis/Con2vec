@@ -1,34 +1,34 @@
-
-
 import os
+os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+
 import numpy as np
-import moviepy.editor as mp
 import ffmpeg
 import librosa
 import matplotlib.pyplot as plt
 
-# os.environ["IMAGEIO_FFMPEG_EXE"] = "./.venv/lib/python3.10/site-packages/ffmpeg"
-# load video
-video = mp.VideoFileClip("Data/test_video.mov")
 
-# extract the audio
-audio = video.audio
-audio.write_audiofile('./Data/audio.mp3')
 
-print(audio)
 
-y, sr = librosa.load('./Data/audio.mp3')
+dirpath = 'Data_super_icbs'
+group = '20240312_1629_super_5KHZ83'
+filename = '1710326137265-4144e390-caf9-40c5-9424-9cc5f734cbb6-cam-audio-1710326138270'
+filename_path =  os.path.join(dirpath, group, filename)
 
-tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
-print(tempo)
+print(filename_path)
 
-# calculate RMS for loudness/energy
-S, phase = librosa.magphase(librosa.stft(y))
-rms = librosa.feature.rms(S=S)
+y, sr = librosa.load(filename_path, sr = 32000)
 
-print(rms)
 
-# mel-scale for pitch
-mfccs = librosa.feature.mfcc(y, sr=sr)
-print(mfccs)
+# tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+# print(tempo)
+
+# # calculate RMS for loudness/energy
+# S, phase = librosa.magphase(librosa.stft(y))
+# rms = librosa.feature.rms(S=S)
+
+# print(rms)
+
+# # mel-scale for pitch
+# mfccs = librosa.feature.mfcc(y, sr=sr)
+# print(mfccs)
 

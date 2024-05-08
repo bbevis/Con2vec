@@ -11,8 +11,6 @@ from mediapipe.framework.formats import landmark_pb2
 import numpy as np
 from deepface import DeepFace
 
-import moviepy.editor as moviepy
-
 class visual_features:
     
     def __init__(self, data, faceblend_model, handgesture_model):
