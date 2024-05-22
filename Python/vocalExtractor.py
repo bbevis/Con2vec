@@ -67,7 +67,7 @@ import librosa
 import matplotlib.pyplot as plt
 import scipy.io as sio
 
-dirpath = 'Data_super_icbs'
+dirpath = 'Data/super_icbs'
 group = '20240312_1629_super_5KHZ83'
 filename = '1710326137265-4144e390-caf9-40c5-9424-9cc5f734cbb6-cam-audio-1710326138270.wav'
 # filename = '1710326137265-a2bbfe30-417d-4fec-84cc-823ac27e1ec3-cam-audio-1710326138271'
@@ -92,7 +92,6 @@ rms = librosa.feature.rms(S=S)
 hop_length = 512
 
 # mel-scale for pitch
-# mfccs = librosa.feature.mfcc(y, sr=sr)
 # Compute MFCC features from the raw signal
 mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=hop_length, n_mfcc=13)
 
@@ -117,7 +116,7 @@ beat_chroma = librosa.util.sync(chromagram,
 # Finally, stack all beat-synchronous features together
 beat_features = np.vstack([beat_chroma, beat_mfcc_delta])
 
-import matplotlib.pyplot as plt
+
 
 fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
 D = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
