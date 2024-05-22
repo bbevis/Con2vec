@@ -93,7 +93,7 @@ class visual_features:
                 break
             
             timestamp_ms = self.cap.get(cv2.CAP_PROP_POS_MSEC)
-            print('tiimestamp in seconds: ', timestamp_ms/1000)
+            # print('tiimestamp in seconds: ', timestamp_ms/1000)
             timestamps.append(timestamp_ms)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
             
@@ -101,19 +101,20 @@ class visual_features:
             hand_gesture_results.append(hand_gestures)
             
             face_blendshapes_names, face_blendshapes_scores = self.face_cue_detector(mp_image)
-            print(face_blendshapes_scores)
+            # print(face_blendshapes_scores)
             face_blendshapes_results.append(face_blendshapes_scores)
 
-            emotion_name, emotion_scores = self.emotion_detector(frame)
-            emotion_results.append(emotion_scores)
+            # emotion_name, emotion_scores = self.emotion_detector(frame)
+            # emotion_results.append(emotion_scores)
             
         handGestureRes = pd.get_dummies(pd.Series(hand_gesture_results)).astype(int)
         faceblendRes = pd.DataFrame(face_blendshapes_results, columns = face_blendshapes_names)
-        emotionRes = pd.DataFrame(emotion_results, columns = emotion_name)
+        # emotionRes = pd.DataFrame(emotion_results, columns = emotion_name)
 
-        resAll = pd.concat([faceblendRes, emotionRes, handGestureRes], axis = 1)
+        resAll = pd.concat([faceblendRes, handGestureRes], axis = 1) # add emotionRes in if needed
         # resAll['Timestamp_ms'] = timestamps
         resAll.insert(0, 'timestamp_ms', timestamps)
+        resAll = resAll.dropna()
         self.cap.release()
         
         return resAll
