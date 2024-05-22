@@ -59,7 +59,6 @@ def extract_video_raw(data_dir, video_filenames):
     # data_dir is the folder that contains the raw file
 
     for dirpath, dirnames, filenames in os.walk(data_dir):
-        print('HERE')
         print(dirpath)
         print(dirnames)
         print(filenames)
