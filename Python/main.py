@@ -61,11 +61,11 @@ def video_files(size_threshold, below = True):
         return metadata['filename'][(metadata['is_video'] == 1) & (metadata['file_size'] >= size_threshold)].to_list()
 
 print(os.getcwd())
-# data_directory = 'Data/super_icbs/'  # Change this to the directory you want to start from
-# metadata = get_all_files_with_metadata(data_directory)
-# # Save the DataFrame to a CSV file
-# metadata.to_csv('./Output/super_icbs/files_metadata.csv', index=False)
+data_directory = 'Data_super_May22/'  # Change this to the directory you want to start from
+metadata = get_all_files_with_metadata(data_directory)
+# Save the DataFrame to a CSV file
+metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
 
-# video_filenames = video_files(10)
+video_filenames = video_files(10)
 # print(video_filenames)
-# extract_video_raw(data_directory, video_filenames)
+extract_video_raw(data_directory, video_filenames)
