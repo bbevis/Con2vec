@@ -67,7 +67,7 @@ import librosa
 import matplotlib.pyplot as plt
 import scipy.io as sio
 
-dirpath = 'Data/super_icbs'
+dirpath = 'Data_super_icbs'
 group = '20240312_1629_super_5KHZ83'
 filename = '1710326137265-4144e390-caf9-40c5-9424-9cc5f734cbb6-cam-audio-1710326138270.wav'
 # filename = '1710326137265-a2bbfe30-417d-4fec-84cc-823ac27e1ec3-cam-audio-1710326138271'

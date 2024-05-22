@@ -6,6 +6,7 @@ __pycache__/
 # Folders
 Data/
 Data_super_icbs/
+Data_super_May22/
 Archive/
 # C extensions
 *.so
