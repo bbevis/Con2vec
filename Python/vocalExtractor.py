@@ -56,6 +56,8 @@
 
 
 import os
+print('working directory:')
+print(os.getcwd())
 os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 # os.environ["IMAGEIO_FFMPEG_EXE"] = "./.venv/lib/python3.10/site-packages/ffmpeg"
 
