@@ -144,4 +144,4 @@ if __name__ == '__main__':
     
     
     resAll = vf.raw_outputs()
-    resAll.to_csv('Output/super_icbs/test_output_super_visual.csv', index=False)
+    resAll.to_csv('Output/super_May22/test_output_super_visual.csv', index=False)
