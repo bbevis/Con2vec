@@ -66,6 +66,6 @@ metadata = get_all_files_with_metadata(data_directory)
 # Save the DataFrame to a CSV file
 metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
 
-video_filenames = video_files(10)
+video_filenames = video_files(5)
 # print(video_filenames)
 extract_video_raw(data_directory, video_filenames)
