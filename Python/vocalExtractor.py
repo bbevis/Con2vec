@@ -1,8 +1,8 @@
 import os
 print('working directory:')
 print(os.getcwd())
-# os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
-os.environ["IMAGEIO_FFMPEG_EXE"] = "./.venv/lib/python3.10/site-packages/ffmpeg"
+os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+# os.environ["IMAGEIO_FFMPEG_EXE"] = "./.venv/lib/python3.10/site-packages/ffmpeg"
 
 import numpy as np
 import ffmpeg
@@ -15,6 +15,7 @@ group = '20240522_1325_S3WBLM9W4J66'
 # filename = '1710326137265-4144e390-caf9-40c5-9424-9cc5f734cbb6-cam-audio-1710326138270.wav'
 filename = '1716394969658-1a569948-8381-409b-9a04-fbb484b191a4-cam-audio-1716394970693.wav'
 filename_path =  os.path.join(dirpath, group, filename)
+# filename_path =  '1716394969658-1a569948-8381-409b-9a04-fbb484b191a4-cam-audio-1716394970693.wav'
 
 print(filename_path)
 
