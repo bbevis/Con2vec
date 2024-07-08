@@ -3,6 +3,6 @@ import vocalExtractor
 import turnsExtractor
 import visualAggregator
 import vocalAggregator
-import mmMerge
+import Python.merge as merge
 import linguisticExtractor
 import main
