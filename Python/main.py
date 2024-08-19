@@ -57,9 +57,15 @@ def extract_video_raw(data_dir, video_filenames):
 def video_files(lower_threshold, upper_threshold):
     
     # get list of video files only within a datasize
-    return metadata['filename'][(metadata['is_video'] == 1) & 
+    fs = metadata['filename'][(metadata['is_video'] == 1) & 
                                 (metadata['file_size'] <= upper_threshold) & 
                                 (metadata['file_size'] >= lower_threshold)].to_list()
+    
+    excluded_fs = os.listdir('Output/super_May22/Video/')
+    
+    fs = [f for f in fs if f not in excluded_fs]
+    
+    return fs
 
 
 print(os.getcwd())
