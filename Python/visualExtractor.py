@@ -20,6 +20,7 @@ class visual_features:
         self.VisionRunningMode = mp.tasks.vision.RunningMode        
         self.pt_blendshape = faceblend_model
         self.pt_handgesture = handgesture_model
+        self.face_blendshapes_names = []
 
     def face_cue_detector(self, mp_image):
 
@@ -101,15 +102,23 @@ class visual_features:
             hand_gesture_results.append(hand_gestures)
             
             face_blendshapes_names, face_blendshapes_scores = self.face_cue_detector(mp_image)
+            
+            # Save column headers in case last extaction contained no features
+            if len(face_blendshapes_names) == 52:
+                self.face_blendshapes_names = face_blendshapes_names
             # print(face_blendshapes_scores)
             face_blendshapes_results.append(face_blendshapes_scores)
 
             # emotion_name, emotion_scores = self.emotion_detector(frame)
             # emotion_results.append(emotion_scores)
             
+        
         handGestureRes = pd.get_dummies(pd.Series(hand_gesture_results)).astype(int)
-        faceblendRes = pd.DataFrame(face_blendshapes_results, columns = face_blendshapes_names)
+        faceblendRes = pd.DataFrame(face_blendshapes_results, columns = self.face_blendshapes_names)
         # emotionRes = pd.DataFrame(emotion_results, columns = emotion_name)
+        
+        # print(faceblendRes)
+        # print(handGestureRes)
 
         resAll = pd.concat([faceblendRes, handGestureRes], axis = 1) # add emotionRes in if needed
         # resAll['Timestamp_ms'] = timestamps
@@ -127,9 +136,9 @@ if __name__ == '__main__':
     # /Users/bb320/Library/CloudStorage/GoogleDrive-burint@bnmanalytics.com/My Drive/Imperial/03_TeamofRivals/Con2vec/Data/super_icbs/20240312_1629_super_5KHZ83
     
     # base_path = '/Users/bb320/Library/CloudStorage/GoogleDrive-burint@bnmanalytics.com/My Drive/Imperial/03_TeamofRivals/Con2vec/'
-    dirpath = 'Data_super_icbs'
-    group = '20240312_1629_super_5KHZ83'
-    filename = '1710326137265-4144e390-caf9-40c5-9424-9cc5f734cbb6-cam-video-1710326138273'
+    dirpath = 'Data_super_May22'
+    group = '20240522_1325_S3WBLMMSXASK'
+    filename = '1716394940868-5349d99f-1db8-4d3b-9c69-a1fdab8f96eb-cam-video-1716394943895'
     filename_path =  os.path.join(dirpath, group, filename)
 
     # print("file exists?", os.path.exists(file_path))
@@ -144,4 +153,4 @@ if __name__ == '__main__':
     
     
     resAll = vf.raw_outputs()
-    resAll.to_csv('Output/super_May22/test_output_super_visual.csv', index=False)
+    resAll.to_csv('Output/super_May22/test_output_visual.csv', index=False)
