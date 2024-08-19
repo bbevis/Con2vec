@@ -8,6 +8,7 @@ Data/
 Data_super_icbs/
 Data_super_May22/
 Archive/
+Output/super_icbs
 # C extensions
 *.so
 
