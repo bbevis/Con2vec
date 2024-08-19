@@ -31,6 +31,8 @@ def get_all_files_with_metadata(data_dir):
     # Create a new binary column based on whether 'filename' contains 'audio'
     all_files_metadata['is_audio'] = all_files_metadata['filename'].str.contains('audio').astype(int)
     all_files_metadata['is_video'] = all_files_metadata['filename'].str.contains('video').astype(int)
+    
+    all_files_metadata = all_files_metadata[all_files_metadata['filename'] != '.DS_Store']
 
     print("Metadata saved to files_metadata.csv")
     return all_files_metadata
@@ -50,22 +52,22 @@ def extract_video_raw(data_dir, video_filenames):
                             'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
                             'Pretrained_models/gesture_recognizer.task')
                 resAll = vf.raw_outputs()
-                resAll.to_csv('Output/super_icbs/Video/' + filename + '.csv', index=False)
+                resAll.to_csv('Output/super_May22/Video/' + filename + '.csv', index=False)
 
-def video_files(size_threshold, below = True):
+def video_files(lower_threshold, upper_threshold):
     
     # get list of video files only within a datasize
-    if below == True:
-        return metadata['filename'][(metadata['is_video'] == 1) & (metadata['file_size'] <= size_threshold)].to_list()
-    elif below == False:
-        return metadata['filename'][(metadata['is_video'] == 1) & (metadata['file_size'] >= size_threshold)].to_list()
+    return metadata['filename'][(metadata['is_video'] == 1) & 
+                                (metadata['file_size'] <= upper_threshold) & 
+                                (metadata['file_size'] >= lower_threshold)].to_list()
+
 
 print(os.getcwd())
 data_directory = 'Data_super_May22/'  # Change this to the directory you want to start from
 metadata = get_all_files_with_metadata(data_directory)
 # Save the DataFrame to a CSV file
-metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
+# metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
 
-video_filenames = video_files(5)
-# print(video_filenames)
-extract_video_raw(data_directory, video_filenames)
+video_filenames = video_files(5, 50)
+print(video_filenames)
+# extract_video_raw(data_directory, video_filenames)
