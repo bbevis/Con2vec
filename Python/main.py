@@ -61,7 +61,7 @@ def video_files(lower_threshold, upper_threshold):
                                 (metadata['file_size'] <= upper_threshold) & 
                                 (metadata['file_size'] >= lower_threshold)].to_list()
     
-    # Remove 
+    # Remove from list visual features already extracted
     excluded_fs = os.listdir('Output/super_May22/Video/')
     
     fs = [f for f in fs if f not in excluded_fs]
@@ -77,4 +77,4 @@ metadata = get_all_files_with_metadata(data_directory)
 
 video_filenames = video_files(5, 50)
 print(video_filenames)
-# extract_video_raw(data_directory, video_filenames)
+extract_video_raw(data_directory, video_filenames)
