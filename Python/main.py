@@ -33,6 +33,7 @@ def get_all_files_with_metadata(data_dir):
     all_files_metadata['is_video'] = all_files_metadata['filename'].str.contains('video').astype(int)
     
     all_files_metadata = all_files_metadata[all_files_metadata['filename'] != '.DS_Store']
+    all_files_metadata['issues'] = ''
 
     print("Metadata saved to files_metadata.csv")
     return all_files_metadata
@@ -42,18 +43,34 @@ def extract_video_raw(data_dir, video_filenames):
     # data_dir is the folder that contains the raw data folders and files
 
     for dirpath, dirnames, filenames in os.walk(data_dir):
+        
         print(dirpath)
         print(dirnames)
         print(filenames)
+        
         for filename in filenames:
             if filename in video_filenames:
-                file_path = os.path.join(dirpath, filename)
-                vf = visual.visual_features(file_path,
-                            'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
-                            'Pretrained_models/gesture_recognizer.task')
-                resAll = vf.raw_outputs()
-                resAll.to_csv('Output/super_May22/Video/' + filename + '.csv', index=False)
-
+                
+                try:
+                    file_path = os.path.join(dirpath, filename)
+                    vf = visual.visual_features(file_path,
+                                'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
+                                'Pretrained_models/gesture_recognizer.task')
+                    resAll = vf.raw_outputs()
+                    resAll.to_csv('Output/super_May22/Video/' + filename + '.csv', index=False)
+                    print(f"{filename} has been saved successfully.")
+                    
+                except Exception as e:
+                    error_message = f"Error: {str(e)} while processing {filename}"
+                    print(error_message)
+                    
+                    # open metafile and record error message
+                    metadata = pd.read_csv('./Output/super_May22/files_metadata.csv')
+                    metadata['issues'].loc[metadata['filename'] == filename] = error_message
+                    metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
+                    continue  # Continue to the next iteration
+                    
+                    
 def video_files(lower_threshold, upper_threshold):
     
     # get list of video files only within a datasize range
@@ -61,9 +78,9 @@ def video_files(lower_threshold, upper_threshold):
                                 (metadata['file_size'] <= upper_threshold) & 
                                 (metadata['file_size'] >= lower_threshold)].to_list()
     
-    # Remove from list visual features already extracted
+    # Remove from list videos where visual features already extracted
     excluded_fs = os.listdir('Output/super_May22/Video/')
-    
+    excluded_fs = [f.replace('.csv', '') for f in excluded_fs]
     fs = [f for f in fs if f not in excluded_fs]
     
     return fs
@@ -73,8 +90,9 @@ print(os.getcwd())
 data_directory = 'Data_super_May22/'  # Change this to the directory you want to start from
 metadata = get_all_files_with_metadata(data_directory)
 # Save the DataFrame to a CSV file
-# metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
+metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
 
-video_filenames = video_files(5, 50)
+video_filenames = video_files(50, 100)
 print(video_filenames)
-extract_video_raw(data_directory, video_filenames)
+
+# extract_video_raw(data_directory, video_filenames)

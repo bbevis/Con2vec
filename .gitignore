@@ -9,6 +9,7 @@ Data_super_icbs/
 Data_super_May22/
 Archive/
 Output/super_icbs
+Output/super_May22/Video
 # C extensions
 *.so
 
