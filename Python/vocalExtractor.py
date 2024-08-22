@@ -67,9 +67,7 @@ class vocal_features:
         chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
         bounds = librosa.segment.agglomerative(chroma, 2)
         bound_times = librosa.frames_to_time(bounds, sr=sr)
-        
-        print(bound_times)
-        print(bounds)
+
 
         # Aggregate chroma features between beat events
         # We'll use the median value of each feature between beat frames
