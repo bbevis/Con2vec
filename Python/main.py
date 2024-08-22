@@ -98,12 +98,12 @@ if __name__ == '__main__':
     # video_filenames = get_file_list(200, 400, 'video','Output/super_May22/Video/')
     # print(video_filenames)
 
-    # extract_raw_features(data_directory, video_filenames, 'Output/super_May22/Video/')
+    # extract_raw_features(data_directory, 'visual', video_filenames, 'Output/super_May22/Video/')
     
     vocal_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Vocal/')
     print(vocal_filenames)
 
-    extract_raw_features(data_directory, vocal_filenames)
+    extract_raw_features(data_directory, 'vocal', vocal_filenames, 'Output/super_May22/Vocal/')
     
     end_time = time.time()
     elapsed_time = (end_time - start_time) / 60
