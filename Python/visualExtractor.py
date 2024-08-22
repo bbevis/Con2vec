@@ -1,6 +1,7 @@
 import os
 os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
+import time
 import pandas as pd
 import mediapipe as mp
 from mediapipe.tasks import python
@@ -130,6 +131,8 @@ class visual_features:
 
 if __name__ == '__main__':
     
+    start_time = time.time()
+    
     # video = moviepy.VideoFileClip('Data/1710526842273-c9be3e51-d151-47bd-a7fe-689236f35c0d-cam-video-1710526843251')
     # video.write_videofile('Data/test1.mp4')
     
@@ -154,3 +157,7 @@ if __name__ == '__main__':
     
     resAll = vf.raw_outputs()
     resAll.to_csv('Output/super_May22/test_output_visual.csv', index=False)
+    
+    end_time = time.time()
+    elapsed_time = (end_time - start_time) / 60
+    print(f"The code took {elapsed_time:.2f} minutes to run.")
