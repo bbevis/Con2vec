@@ -1,16 +1,17 @@
 import os
 import pandas as pd
+import numpy as np
+from scipy.signal import find_peaks, lfilter
+import scipy.fftpack
+import librosa
+
+
 print('working directory:')
 print(os.getcwd())
 os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 # os.environ["IMAGEIO_FFMPEG_EXE"] = "./.venv/lib/python3.10/site-packages/ffmpeg"
 
-
-import numpy as np
 import ffmpeg
-import librosa
-import matplotlib.pyplot as plt
-import scipy.io as sio
 
 
 class vocal_features:
@@ -20,111 +21,108 @@ class vocal_features:
         self.data = data
 
     def raw_outputs(self):
+        
+        """
+        Extracts as many useful vocal/prosodic features as possible using Librosa
+
+        Returns:
+            Timestamp: converts the frame indices into time stamps.
+            Pitch (intonation patterns): returns an array of pitch values and corresponding magnitudes, selecting the pitch with the highest magnitude for each frame.
+                The loop ensuring that only positive pitch values are considered (since negative or zero values are invalid for pitch). Can indicate questions, receptiveness
+                and other vocal cues.
+            RMS (Root Mean Square Energy): provides an estimate of the energy of the audio signal. A proxy for loudness/energy.
+            Pulse (Onset Strength): estimates the strength of the onsets (a proxy for rhythm or pulse) in the audio signal.
+                Rhythm and timing are crucial for understanding the cadence and structure of speech.
+                It can reveal patterns in how speakers coordinate turn-taking and emphasize certain words or phrases.
+            Zero-Crossing Rate (ZCR): measures how frequently the signal changes sign, which helps distinguish between different types of sounds, such as voiced vs. unvoiced speech.
+            Spectral Centroid: Indicates where the center of mass of the spectrum is located.
+            Spectral Bandwidth: Measures the width of the spectrum.
+            Spectral Contrast: Captures the difference in amplitude between peaks and valleys in the spectrum.
+            Tonnetz (Tonal Centroid Features): represents the tonal relations between notes in the audio, capturing the harmonic and melodic characteristics.
+                Tonnetz features capture harmonic relations between pitches and can be used to study tonal aspects of speech, which may relate to emotional state or speech style.
+            MFCCs (Mel-frequency Cepstral Coefficients): represent the short-term power spectrum of the audio signal, widely used in speech and audio processing.
+            
+        Synchronicity:
+            Handling Length Mismatch: The code ensures that all features are synchronized by truncating them to the length of the shortest feature set.
+            Data Storage: All extracted features are stored in a pandas DataFrame, and then saved as a CSV file.
+        """
 
         y, sr = librosa.load(self.data)
-
-        tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
-        onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-        pulse = librosa.beat.plp(onset_envelope=onset_env, sr=sr)
         
-        # print(pulse)
-
-        # Separate harmonics and percussives into two waveforms
-        y_harmonic, y_percussive = librosa.effects.hpss(y)
+        # Estimate pitch and magnitude from soundwave
+        pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
         
-        # tonal centroids
-        # Compute the tonal centroid features (tonnetz)
-        # This representation uses the method of 1 to project chroma features onto a 6-dimensional basis representing
-        # the perfect fifth, minor third, and major third each as two-dimensional coordinates.
-        tonnetz = librosa.feature.tonnetz(y=y, sr=sr)
-        # print(tonnetz)
-
-        # # calculate RMS for loudness/energy
-        S, phase = librosa.magphase(librosa.stft(y))
-        rms = librosa.feature.rms(S=S)
-        # print(rms)
-
-        # Set the hop length; at 22050 Hz, 512 samples ~= 23ms
-        hop_length = 512
-
-        # mel-scale for pitch
-        # Compute Mel-frequency cepstral coefficients (MFCCs)features from the raw signal
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=hop_length, n_mfcc=13)
-
-        # And the first-order differences (delta features)
-        mfcc_delta = librosa.feature.delta(mfcc)
-
-        # Stack and synchronize between beat events
-        # This time, we'll use the mean value (default) instead of median
-        beat_mfcc_delta = librosa.util.sync(np.vstack([mfcc, mfcc_delta]),
-                                            beat_frames)
-
-        # Compute chroma features from the harmonic signal
-        chromagram = librosa.feature.chroma_cqt(y=y_harmonic,
-                                                sr=sr)
+        # Compute additional features
+        rms = librosa.feature.rms(y=y)[0]  # Root Mean Square Energy
+        pulse = librosa.onset.onset_strength(y=y, sr=sr)  # Pulse (onset strength)
+        tonnetz = librosa.feature.tonnetz(y=y, sr=sr)  # Tonnetz features (tonal centroid)
+        zcr = librosa.feature.zero_crossing_rate(y=y)[0]  # Zero-Crossing Rate
+        mfccs = librosa.feature.mfcc(y=y, sr=sr)  # MFCCs
+        spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)[0]  # Spectral Centroid
+        spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)[0]  # Spectral Bandwidth
+        spectral_contrast = librosa.feature.spectral_contrast(y=y, sr=sr)  # Spectral Contrast
         
-        # Cluster by chroma similarity, break into 2 segments (speaking and not speaking)
-        chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
-        bounds = librosa.segment.agglomerative(chroma, 2)
-        bound_times = librosa.frames_to_time(bounds, sr=sr)
-
-
-        # Aggregate chroma features between beat events
-        # We'll use the median value of each feature between beat frames
-        beat_chroma = librosa.util.sync(chromagram,
-                                        beat_frames,
-                                        aggregate=np.median)
-
-        # Finally, stack all beat-synchronous features together
-        beat_features = np.vstack([beat_chroma, beat_mfcc_delta])
-
-        Db = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
+        # Compute durations and pauses
+        non_silent_intervals = librosa.effects.split(y, top_db=20)
+        durations = np.diff(librosa.frames_to_time(non_silent_intervals, sr=sr), axis=1).flatten()
         
-        resAll = pd.DataFrame(
+        # Extract the timestamps for pitch, pulse, rms, and tonnetz
+        time_stamps_pitch = librosa.frames_to_time(range(pitches.shape[1]), sr=sr)
+
+        # Extract pitch values
+        pitch_values = []
+        for t in range(pitches.shape[1]):
+            index = magnitudes[:, t].argmax()
+            pitch = pitches[index, t]
+            if pitch > 0:  # Ignore non-positive values which are non-pitch
+                pitch_values.append(pitch)
+            else:
+                pitch_values.append(np.nan)  # Use NaN for frames with no valid pitch
+
+        # Ensure the lengths of feature arrays match
+        min_length = min(len(rms), len(pulse), len(zcr), len(spectral_centroid), len(spectral_bandwidth), len(spectral_contrast[0]))
+        print(min_length)
+        
+        df = pd.DataFrame(
             {
-            "tone_fifth_x": tonnetz[0],
-            "tone_fifth_y": tonnetz[1],
-            "tone_minor_x": tonnetz[2],
-            "tone_minor_y": tonnetz[3],
-            "tone_major_x": tonnetz[4],
-            "tone_major_y": tonnetz[5],
-            "loudness": rms[0],
-            "pulse_tempo": pulse
-        }
-        )
-        
-        # resAll['tempo'] = tempo
-        
-        return resAll
+                "Time_ms": librosa.frames_to_time(range(min_length), sr=sr) * 1000,
+                "Pitch_Hz": pitch_values[:min_length],
+                "RMS": rms[:min_length],
+                "Pulse": pulse[:min_length],
+                "ZCR": zcr[:min_length],
+                "Spectral_Centroid": spectral_centroid[:min_length],
+                "Spectral_Bandwidth": spectral_bandwidth[:min_length]
+            }
+            )
 
+        # Add Spectral Contrast as individual columns
+        for i in range(spectral_contrast.shape[0]):
+            df[f"Spectral_Contrast_{i+1}"] = spectral_contrast[i, :min_length]
+            
+        # Add Tonnetz features as individual columns
+        for i in range(tonnetz.shape[0]):
+            df[f"Tonnetz_{i+1}"] = tonnetz[i, :min_length]
+            
+        # Add MFCCs as individual columns
+        for i in range(mfccs.shape[0]):
+            df[f"MFCC_{i+1}"] = mfccs[i, :min_length]
+            
+        # Print the first 10 rows of the DataFrame
+        # print(df.head(10))
+        
+        return df
 
 if __name__ == '__main__':
     
     dirpath = 'Data_super_May22'
     group = '20240522_1325_S3WBLM9W4J66'
-    # filename = '1710326137265-4144e390-caf9-40c5-9424-9cc5f734cbb6-cam-audio-1710326138270.wav'
     filename = '1716394969658-1a569948-8381-409b-9a04-fbb484b191a4-cam-audio-1716394970693'
     data =  os.path.join(dirpath, group, filename)
-    # data =  os.path.join(dirpath, filename)
-    # data =  '1716394969658-1a569948-8381-409b-9a04-fbb484b191a4-cam-audio-1716394970693.wav'
+
     
     vf = vocal_features(data)
-    
     resAll = vf.raw_outputs()
-    print(resAll)
+    # print(resAll)
     resAll.to_csv('Output/super_May22/test_output_vocal.csv', index=False)
     
-    # fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
-    # D = librosa.amplitude_to_db(np.abs(librosa.stft(y)), ref=np.max)
-    # img = librosa.display.specshow(D, y_axis='linear', x_axis='time',
-    #                                sr=sr, ax=ax[0])
-    # ax[0].set(title='Linear-frequency power spectrogram')
-    # ax[0].label_outer()
-    # D = librosa.amplitude_to_db(np.abs(librosa.stft(y, hop_length=hop_length)),
-    #                             ref=np.max)
-    # librosa.display.specshow(D, y_axis='log', sr=sr, hop_length=hop_length,
-    #                          x_axis='time', ax=ax[1])
-    # ax[1].set(title='Log-frequency power spectrogram')
-    # ax[1].label_outer()
-    # fig.colorbar(img, ax=ax, format="%+2.f dB")
-    # plt.show()
+   
