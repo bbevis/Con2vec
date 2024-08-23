@@ -25,7 +25,7 @@ class vocal_features:
         """
         Extracts as many useful vocal/prosodic features as possible using Librosa
 
-        Returns:
+        Features extracted:
             Timestamp: converts the frame indices into time stamps.
             Pitch (intonation patterns): returns an array of pitch values and corresponding magnitudes, selecting the pitch with the highest magnitude for each frame.
                 The loop ensuring that only positive pitch values are considered (since negative or zero values are invalid for pitch). Can indicate questions, receptiveness
@@ -81,7 +81,7 @@ class vocal_features:
 
         # Ensure the lengths of feature arrays match
         min_length = min(len(rms), len(pulse), len(zcr), len(spectral_centroid), len(spectral_bandwidth), len(spectral_contrast[0]))
-        print(min_length)
+        # print(min_length)
         
         df = pd.DataFrame(
             {

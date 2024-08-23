@@ -62,12 +62,17 @@ def extract_raw_features(data_dir, data_type, type_filenames, outpath):
                 
                 try:
                     file_path = os.path.join(dirpath, filename)
+                    
                     if data_type == 'video':
+                        
                         vf = visual.visual_features(file_path,
                                     'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
                                     'Pretrained_models/gesture_recognizer.task')
+                        
                     elif data_type == 'vocal':
+                        
                         vf = vocal.vocal_features(file_path)
+                        
                     resAll = vf.raw_outputs()
                     resAll.to_csv(outpath + filename + '.csv', index=False)
                     print(f"{filename} has been saved successfully.")
@@ -87,24 +92,27 @@ def extract_raw_features(data_dir, data_type, type_filenames, outpath):
 if __name__ == '__main__':
     
     start_time = time.time()
-    
     print(os.getcwd())
+    
+    ############ meta data ############################
     data_directory = 'Data_super_May22/'  # Change this to the directory you want to start from
     metadata = get_metadata(data_directory)
- 
     # Save the DataFrame to a CSV file
     # metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
 
+    ############ video features ############################
     # video_filenames = get_file_list(200, 400, 'video','Output/super_May22/Video/')
     # print(video_filenames)
 
     # extract_raw_features(data_directory, 'visual', video_filenames, 'Output/super_May22/Video/')
     
+    ############ vocal features ############################
     vocal_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Vocal/')
     print(vocal_filenames)
 
     extract_raw_features(data_directory, 'vocal', vocal_filenames, 'Output/super_May22/Vocal/')
     
+    ############ run time ############################
     end_time = time.time()
     elapsed_time = (end_time - start_time) / 60
     print(f"The code took {elapsed_time:.2f} minutes to run.")
