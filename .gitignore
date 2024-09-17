@@ -14,6 +14,9 @@ Output/super_May22/Vocal
 # C extensions
 *.so
 
+# API keys
+config.py
+
 # Distribution / packaging
 .Python
 build/
