@@ -11,6 +11,7 @@ Archive/
 Output/super_icbs
 Output/super_May22/Video
 Output/super_May22/Vocal
+Output/super_May22/Text
 # C extensions
 *.so
 

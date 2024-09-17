@@ -3,7 +3,9 @@ import pandas as pd
 import datetime
 import visualExtractor as visual
 import vocalExtractor as vocal
+import textExtractor as text
 import time
+import asyncio
 
 def get_metadata(data_dir):
     
@@ -70,12 +72,19 @@ def extract_raw_features(data_dir, data_type, type_filenames, outpath):
                         vf = visual.visual_features(file_path,
                                     'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
                                     'Pretrained_models/gesture_recognizer.task')
+                        resAll = vf.raw_outputs()
 
                     elif data_type == 'vocal':
                         
                         vf = vocal.vocal_features(file_path)
+                        resAll = vf.raw_outputs()
                         
-                    resAll = vf.raw_outputs()
+                    elif data_type == 'text':
+                        
+                        tf = text.text_features(file_path)
+                        resAll = asyncio.run(tf.transcribe_single_file(file_path))
+                        
+                    
                         
                     resAll.to_csv(outpath + filename + '.csv', index=False)
                     print(f"{filename} has been saved successfully.")
@@ -114,6 +123,12 @@ if __name__ == '__main__':
     # print(vocal_filenames)
 
     # extract_raw_features(data_directory, 'vocal', vocal_filenames, 'Output/super_May22/Vocal/')
+    
+    ############ text features ############################
+    text_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Text/')
+    # print(text_filenames)
+
+    extract_raw_features(data_directory, 'text', text_filenames, 'Output/super_May22/Text/')
     
     ############ run time ############################
     end_time = time.time()
