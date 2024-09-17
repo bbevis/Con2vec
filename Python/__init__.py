@@ -6,3 +6,4 @@ import vocalAggregator
 import Python.merge as merge
 import linguisticExtractor
 import main
+import config
