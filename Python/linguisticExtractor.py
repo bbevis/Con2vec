@@ -78,18 +78,19 @@ if __name__ == "__main__":
     print('working directory:')
     print(os.getcwd())
     
+    import certifi
+    print(certifi.where())  # This prints the path to the certifi CA bundle
+    print('certificate location')
+    os.environ['SSL_CERT_FILE'] = certifi.where()
+
+    
     dirpath = 'Data_super_May22'
     group = '20240522_1325_S3WBLM9W4J66'
     filename = '1716394969658-1a569948-8381-409b-9a04-fbb484b191a4-cam-audio-1716394970693'
 
     # Replace with your .webm file path and desired output CSV path
     input_file =  os.path.join(dirpath, group, filename) # Path to your input .webm file
-    output_csv = os.path.join('Output', 'super_May22', 'test_output_linguistics.csv')  # Path to save the output CSV file
-    
-    from mutagen import File
-    audio = File(input_file)
-    print('blah 1')
-    print(audio.mime[0])
+    output_csv = os.path.join('Output', 'super_May22', 'test_output_text.csv')  # Path to save the output CSV file
     
     # Run the transcription
     asyncio.run(transcribe_single_file(input_file, output_csv))
