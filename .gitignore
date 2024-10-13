@@ -12,6 +12,7 @@ Output/super_icbs
 Output/super_May22/Video
 Output/super_May22/Vocal
 Output/super_May22/Text
+Output/super_May22/Segments
 # C extensions
 *.so
 
