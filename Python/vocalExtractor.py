@@ -4,6 +4,11 @@ import numpy as np
 from scipy.signal import find_peaks, lfilter
 import scipy.fftpack
 import librosa
+import logging
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 print('working directory:')
@@ -47,12 +52,18 @@ class vocal_features:
             Data Storage: All extracted features are stored in a pandas DataFrame, and then saved as a CSV file.
         """
 
-        y, sr = librosa.load(self.data)
+        logging.info(f"Loading audio file from {self.data_path}")
+        try:
+            # Load audio file and extract sampling rate
+            y, sr = librosa.load(self.data_path, sr=None)
+        except Exception as e:
+            logging.error(f"Error loading audio file: {e}")
+            return None
+        
+        logging.info("Extracting features from audio...")
         
         # Estimate pitch and magnitude from soundwave
         pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
-        
-        # Compute additional features
         rms = librosa.feature.rms(y=y)[0]  # Root Mean Square Energy
         pulse = librosa.onset.onset_strength(y=y, sr=sr)  # Pulse (onset strength)
         tonnetz = librosa.feature.tonnetz(y=y, sr=sr)  # Tonnetz features (tonal centroid)
@@ -61,9 +72,7 @@ class vocal_features:
         spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)[0]  # Spectral Centroid
         spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)[0]  # Spectral Bandwidth
         spectral_contrast = librosa.feature.spectral_contrast(y=y, sr=sr)  # Spectral Contrast
-        
-        # Compute durations and pauses
-        non_silent_intervals = librosa.effects.split(y, top_db=20)
+        non_silent_intervals = librosa.effects.split(y, top_db=20) # Compute durations and pauses
         durations = np.diff(librosa.frames_to_time(non_silent_intervals, sr=sr), axis=1).flatten()
         
         # Extract the timestamps for pitch, pulse, rms, and tonnetz
@@ -109,6 +118,8 @@ class vocal_features:
             
         # Print the first 10 rows of the DataFrame
         # print(df.head(10))
+        
+        logging.info("Feature extraction complete.")
         
         return df
 
