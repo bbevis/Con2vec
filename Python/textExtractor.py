@@ -6,8 +6,8 @@ import asyncio
 import json
 from config import DEEPGRAM_API_KEY
 import time
-import mimetypes
 import certifi
+import logging
 
 # print(certifi.where())  # This prints the path to the certifi CA bundle
 # print('certificate location')
@@ -20,9 +20,20 @@ class text_features:
         self.data = data
         
     async def transcribe_audio_with_deepgram(self, audio_path):
+        
+        """
+        Transcribe audio using Deepgram's API.
+        
+        Args:
+            audio_path (str): Path to the audio file.
+        
+        Returns:
+            dict: Transcription result from Deepgram.
+        """
 
         # Transcribe using Deepgram
         try:
+            logging.info(f"Starting transcription for {audio_path}")
             dg_client = Deepgram(DEEPGRAM_API_KEY)
             
             # Read audio file for Deepgram
@@ -33,15 +44,27 @@ class text_features:
                 {'buffer': audio_data, 'mimetype': 'audio/wav'},  # Ensure it's in WAV format
                 {'punctuate': True, 'utterances': True, 'language': 'en'}  # Additional options
             )
+            
+            logging.info(f"Transcription successful for {audio_path}")
         
             return response
         
         except Exception as e:
-            print(f"Error during transcription: {e}")
-            
+            logging.error(f"Error during transcription: {e}")
             return None
 
+
     def extract_transcription_data(self, transcription_result):
+        
+        """
+        Extract word-level timestamps from the transcription result.
+        
+        Args:
+            transcription_result (dict): The result of the transcription from Deepgram.
+        
+        Returns:
+            list: A list of transcriptions with word text, start time, and end time.
+        """
         
         # process transcriptions and extract word-level timestamps
         
@@ -67,12 +90,22 @@ class text_features:
 
         # Save the DataFrame to CSV
         df.to_csv(output_csv, index=False)
-        print(f"Transcriptions saved to {output_csv}")
+        logging.info(f"Transcriptions saved to {output_csv}")
 
     # Main function to run the transcription for a single file
     async def transcribe_single_file(self, input_audio_file):
+        """
+        Process a single audio file for transcription and save the output to CSV.
+        
+        Args:
+            input_audio_file (str): Path to the audio file to be transcribed.
+            output_csv (str): Path to save the transcription CSV file.
+        
+        Returns:
+            pd.DataFrame: DataFrame containing the transcription data.
+        """
         # Perform transcription using Deepgram
-        print(f"Processing {input_audio_file}...")
+        logging.info(f"Processing {input_audio_file}")
 
         transcription_result = await self.transcribe_audio_with_deepgram(input_audio_file)
         transcription_data = self.extract_transcription_data(transcription_result)
@@ -87,6 +120,8 @@ class text_features:
 if __name__ == "__main__":
     
     start_time = time.time()
+    logging.info("Starting the transcription process...")
+    
     print('working directory:')
     print(os.getcwd())
 
@@ -102,6 +137,8 @@ if __name__ == "__main__":
     # Run the transcription
     tf = text_features(input_file)
     asyncio.run(tf.transcribe_single_file(input_file, output_csv))
+    
+    # Measure and print the elapsed time
     
     end_time = time.time()
     elapsed_time = (end_time - start_time) / 60
