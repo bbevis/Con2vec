@@ -126,7 +126,7 @@ if __name__ == '__main__':
     
     ############ text features ############################
     text_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Text/')
-    # print(text_filenames)
+    print(text_filenames)
 
     extract_raw_features(data_directory, 'text', text_filenames, 'Output/super_May22/Text/')
     

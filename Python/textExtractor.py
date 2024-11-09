@@ -78,12 +78,14 @@ class text_features:
                     start_time = word['start']
                     end_time = word['end']
                     transcriptions.append([word_text, start_time, end_time])
+                    
         return transcriptions
 
     # Function to save transcriptions to CSV
     def save_transcriptions_to_csv(self, transcriptions, output_csv, filename):
         # Create a DataFrame from the list of transcriptions
         df = pd.DataFrame(transcriptions, columns=["Word", "Start Time", "End Time"])
+        # df['start_time_diff'] = df['Start Time'].diff().fillna(0)
         
         # Add filename to the CSV
         # df.insert(0, "Filename", filename)
@@ -111,6 +113,7 @@ class text_features:
         transcription_data = self.extract_transcription_data(transcription_result)
         
         transcription_data = pd.DataFrame(transcription_data, columns=["Word", "Start Time", "End Time"])
+        transcription_data['start_time_diff'] = transcription_data['Start Time'].diff().fillna(0)
         
         # Save the results to CSV
         # self.save_transcriptions_to_csv(transcription_data, output_csv_file, os.path.basename(input_audio_file))
