@@ -19,45 +19,73 @@ def load_metadata(file_path: str) -> pd.DataFrame:
         logging.error("Error loading metadata: %s", e)
         raise
 
-def stack_files_by_group(metadata: pd.DataFrame, base_directory: str, output_directory: str) -> pd.DataFrame:
+def stack_files_by_group(metadata, base_directory, output_directory):
+    
     """
-    Stacks files by SegmentID, adds metadata, and processes overlap and backchannel indicators.
-
+    Stacks files vertically for each group based on the metadata provided.
+    Each file is stacked with an additional 'SourceFile' and 'Speaker' column.
+    Logs the process and skips groups with more than 2 files.
+    
     Args:
-        metadata (pd.DataFrame): Metadata with file info.
-        base_directory (str): Directory with input CSV files.
-        output_directory (str): Directory for saving stacked files.
-
+        metadata (pd.DataFrame): Metadata containing file information.
+        base_directory (str): Path where the CSV files are located.
+        output_directory (str): Directory to save the stacked files.
+    
     Returns:
-        pd.DataFrame: Combined DataFrame of all stacked groups.
+        pd.DataFrame: Final stacked DataFrame combining all groups.
     """
-    os.makedirs(output_directory, exist_ok=True)  # Ensure output directory exists
-    full_stacked_df = pd.DataFrame()
+    
+    # Ensure output directory exists
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    
+    # Define the log file path in the Segment_pairs directory
     log_file_path = os.path.join(output_directory, 'stack_log.txt')
 
+    # Open the log file to write information
     with open(log_file_path, 'w') as log_file:
-        for segment_id, group in metadata.groupby('SegmentID'):
-            if len(group) > 2:
-                log_file.write(f"Skipping SegmentID '{segment_id}' due to more than 2 files.\n")
-                continue
-            
-            stacked_data = pd.DataFrame()
-            for i, row in group.iterrows():
+        # Initialize an empty list to store the stacked DataFrames from all groups
+        all_group_dfs = []
+
+        # Loop through each unique group
+        for group in metadata['group'].unique():
+            # Filter the metadata for the current group
+            group_files = metadata[metadata['group'] == group]['filename']
+
+            # Check if there are exactly 2 files in the group
+            if len(group_files) > 2:
+                log_file.write(f"Group '{group}' does not have exactly 2 files. Skipping...\n")
+                continue  # Skip this group if it doesn't have exactly 2 files
+
+            # Initialize an empty list to store the stacked dataframes
+            group_dfs = []
+
+            # Loop through each file in the group and assign Speaker 'A' or 'B'
+            for i, file in enumerate(group_files):
+                file_path = os.path.join(base_directory, file) + str('.csv')
                 try:
-                    file_path = os.path.join(base_directory, row['FileName'])
-                    data = pd.read_csv(file_path)
-                    data['SourceFile'] = row['FileName']
-                    data['Speaker'] = 'A' if i == 0 else 'B'
-                    stacked_data = pd.concat([stacked_data, data], ignore_index=True)
+                    # Read the CSV file
+                    df = pd.read_csv(file_path)
+
+                    # Add a column for the file name and Speaker ('A' for the first file, 'B' for the second)
+                    df['SourceFile'] = file
+                    df['Speaker'] = 'A' if i == 0 else 'B'
+
+                    # Append the dataframe to the list
+                    group_dfs.append(df)
                 except Exception as e:
-                    log_file.write(f"Error processing {row['FileName']} in SegmentID '{segment_id}': {e}\n")
+                    log_file.write(f"Error reading {file} in group '{group}': {e}\n")
                     continue
 
-            if not stacked_data.empty:
-                stacked_data = process_turns_and_overlaps(stacked_data)
-                save_segment_stacked_data(stacked_data, segment_id, output_directory, log_file)
-                full_stacked_df = pd.concat([full_stacked_df, stacked_data], ignore_index=True)
-    return full_stacked_df
+            # Stack the dataframes vertically (i.e., concatenate them)
+            if group_dfs:
+                stacked_df = pd.concat(group_dfs, ignore_index=True)
+                # print(group)
+                # print(group_files)
+                stacked_df = process_turns_and_overlaps(stacked_df)
+                save_group_stacked_data(stacked_df, group, output_directory, log_file)
+
+    return stacked_df
 
 def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
     """
@@ -76,31 +104,70 @@ def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
     current_turn = 0
     prev_speaker = None
     prev_end_time = 0
-
+    
+    
     for i, row in data.iterrows():
-        is_overlap = row['Start Time'] < prev_end_time and row['Speaker'] != prev_speaker
-        if i > 0 and data.at[i - 1, 'Speaker'] != row['Speaker']:
-            current_turn += 1
-        data.at[i, 'Turn'] = current_turn if not is_overlap else f"Overlap_{current_turn}"
-        data.at[i, 'Overlap'] = int(is_overlap)
-        prev_speaker = row['Speaker']
-        prev_end_time = row['End Time']
+        
+        try:
 
+            # Check if it starts before the previous word has ended (indicating overlap or backchannel)
+            is_overlap = row['Start Time'] < prev_end_time and row['Speaker'] != prev_speaker
+
+            # Classify as backchannel if surrounding speakers are different speakers,
+            # and start_time_diff is > 10 showing infrequent interjection
+            # and while next start time diff is < 5 showing that the previous speaker was still going
+            if data.at[i, 'start_time_diff'] > 10 and \
+                data.at[i+1, 'start_time_diff'] < 5 and \
+                data.at[i, 'Speaker'] != (data.at[i-1, 'Speaker'] and data.at[i+1, 'Speaker']):
+                    data.at[i, 'Backchannel'] = 1
+                    data.at[i, 'Turn'] = current_turn
+            # elif is_overlap and not is_backchannel_word:
+            elif is_overlap:
+                # Otherwise, classify as overlap if it's not a backchannel word
+                data.at[i, 'Overlap'] = 1
+                data.at[i, 'Turn'] = f"Overlap_{current_turn}"  # Keep the turn number the same
+            elif i != 0 and (data.at[i - 1, 'Backchannel'] == 1 or data.at[i - 1, 'Overlap'] == 1):
+                # print(i, row)
+                data.at[i, 'Turn'] = current_turn
+            else:
+                # Increment turn only if it's a new speaker and not overlapping
+                # or if the previous row was an overlap or backchannel
+                if row['Speaker'] != prev_speaker:
+                    current_turn += 1
+                data.at[i, 'Turn'] = current_turn
+                
+            # Update previous speaker and end time trackers
+            prev_speaker = row['Speaker']
+            prev_end_time = row['End Time']
+            
+        except Exception as e:
+            error_message = f"Error processing file: {str(e)}"
+            logging.info(error_message)
+            
+            continue
+    
+    # Initialize the 'contest' column
     data['Contest'] = 'uncontested'
+
+    # Iterate through the DataFrame
     for i in range(len(data)):
-        if data.at[i, 'Overlap'] == 1:
-            neighborhood = data['Overlap'].iloc[max(i-5, 0):min(i+6, len(data))]
-            data.at[i, 'Contest'] = 'contested' if neighborhood.sum() > 1 else 'uncontested'
+        if data['Overlap'][i] == 1 and \
+            (np.sum(data['Overlap'][i-5:i]) == 0 and np.sum(data['Overlap'][i+1:i+5]) == 0):
+                data.loc[i, 'Contest'] = 'uncontested'
+        elif (data['Overlap'][i] == 1 and any(data['Overlap'][i+1:i+5] == 1)) or \
+            (any(data['Overlap'][i-5:i+1] == 1) and any(data['Overlap'][i:i+5] == 1)):
+            data.loc[i, 'Contest'] = 'contested'
+            
     return data
 
-def save_segment_stacked_data(data: pd.DataFrame, segment_id: str, output_dir: str, log_file):
-    """Save each segment's stacked data to a CSV file and log the action."""
+def save_group_stacked_data(data: pd.DataFrame, group_id: str, output_dir: str, log_file):
+    """Save each group's stacked data to a CSV file and log the action."""
     try:
-        output_path = os.path.join(output_dir, f'stacked_{segment_id}.csv')
+        output_path = os.path.join(output_dir, f'stacked_{group_id}.csv')
         data.to_csv(output_path, index=False)
-        logging.info("Saved stacked file for SegmentID %s at %s", segment_id, output_path)
+        logging.info("Saved stacked file for group %s at %s", group_id, output_path)
     except Exception as e:
-        log_file.write(f"Error saving stacked file for SegmentID '{segment_id}': {e}\n")
+        log_file.write(f"Error saving stacked file for group '{group_id}': {e}\n")
 
 def main():
     base_directory = os.path.join('Output', 'super_May22', 'Text')
@@ -108,11 +175,12 @@ def main():
     metadata_path = './Output/super_May22/files_metadata.csv'
 
     meta_df = load_metadata(metadata_path)
-    full_stacked_df = stack_files_by_group(meta_df, base_directory, output_directory)
+    stack_files_by_group(meta_df, base_directory, output_directory)
+    
 
-    full_output_path = os.path.join(output_directory, 'full_stacked_output.csv')
+    # full_output_path = os.path.join(output_directory, 'full_stacked_output.csv')
     # full_stacked_df.to_csv(full_output_path, index=False)
-    logging.info("Saved full stacked DataFrame at %s", full_output_path)
+    # logging.info("Saved full stacked DataFrame at %s", full_output_path)
 
 if __name__ == "__main__":
     main()
