@@ -36,8 +36,7 @@ def stack_files_by_group(metadata, base_directory, output_directory):
     """
     
     # Ensure output directory exists
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
+    os.makedirs(output_directory, exist_ok=True)
     
     # Define the log file path in the Segment_pairs directory
     log_file_path = os.path.join(output_directory, 'stack_log.txt')
@@ -53,8 +52,8 @@ def stack_files_by_group(metadata, base_directory, output_directory):
             group_files = metadata[metadata['group'] == group]['filename']
 
             # Check if there are exactly 2 files in the group
-            if len(group_files) > 2:
-                log_file.write(f"Group '{group}' does not have exactly 2 files. Skipping...\n")
+            if len(group_files) != 2:
+                log_file.write(f"Group '{group}' contains {len(group_files)} files.\n")
                 continue  # Skip this group if it doesn't have exactly 2 files
 
             # Initialize an empty list to store the stacked dataframes
@@ -62,7 +61,7 @@ def stack_files_by_group(metadata, base_directory, output_directory):
 
             # Loop through each file in the group and assign Speaker 'A' or 'B'
             for i, file in enumerate(group_files):
-                file_path = os.path.join(base_directory, file) + str('.csv')
+                file_path = os.path.join(base_directory, f"{file}.csv")
                 try:
                     # Read the CSV file
                     df = pd.read_csv(file_path)
