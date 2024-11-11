@@ -124,7 +124,7 @@ def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
             elif is_overlap:
                 # Otherwise, classify as overlap if it's not a backchannel word
                 data.at[i, 'Overlap'] = 1
-                data.at[i, 'Turn'] = f"Overlap_{current_turn}"  # Keep the turn number the same
+                data.at[i, 'Turn'] = current_turn  # Keep the turn number the same
             elif i != 0 and (data.at[i - 1, 'Backchannel'] == 1 or data.at[i - 1, 'Overlap'] == 1):
                 # print(i, row)
                 data.at[i, 'Turn'] = current_turn
