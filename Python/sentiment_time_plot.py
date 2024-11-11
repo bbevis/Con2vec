@@ -11,8 +11,8 @@ def plot_sentiment_time_series(turn_data):
     turn_data['Sentiment - A'] = np.where(turn_data['Speaker'] == 'A', turn_data['Sentiment'], 0)
     turn_data['Sentiment - B'] = np.where(turn_data['Speaker'] == 'B', turn_data['Sentiment'], 0)
     
-    turn_data['Backchannel - A'] = np.where(turn_data['Speaker'] == 'A', turn_data['Backchannel'], 0)
-    turn_data['Backchannel - B'] = np.where(turn_data['Speaker'] == 'B', turn_data['Backchannel'], 0)
+    turn_data['Backchannel - A'] = np.where(turn_data['Speaker'] == 'A', turn_data['Backchannel'], "")
+    turn_data['Backchannel - B'] = np.where(turn_data['Speaker'] == 'B', turn_data['Backchannel'], "")
     
     turn_data['Contest - A'] = np.where(turn_data['Speaker'] == 'A', turn_data['Contest'], 0)
     turn_data['Contest - B'] = np.where(turn_data['Speaker'] == 'B', turn_data['Contest'], 0)
@@ -35,13 +35,13 @@ def plot_sentiment_time_series(turn_data):
                          color=speaker_palette[1], alpha=0.5, step='mid')
     
     
-    # plt.scatter(turn_data['Time'], turn_data['Backchannel - A'] -.6,
-    #              label='Backchannel - A',
-    #              color=speaker_palette[0], marker='s', s=30)
+    plt.scatter(turn_data['Time'], turn_data['Backchannel - A'] -.6,
+                 label='Backchannel - A',
+                 color=speaker_palette[0], marker='s', s=30)
     
-    # plt.scatter(turn_data['Time'], turn_data['Backchannel - B'] -.6,
-    #              label='Backchannel - B',
-    #              color=speaker_palette[1], marker='s', s=30)
+    plt.scatter(turn_data['Time'], turn_data['Backchannel - B'] -.6,
+                 label='Backchannel - B',
+                 color=speaker_palette[1], marker='s', s=30)
     
 
     # Customize the plot
