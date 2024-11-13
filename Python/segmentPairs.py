@@ -103,6 +103,9 @@ def turn_level_outcomes(data: pd.DataFrame) -> pd.DataFrame:
 
     # Calculate sentiment for each turn
     turn_data['Sentiment'] = turn_data['Word'].apply(lambda text: TextBlob(text).sentiment.polarity)
+    
+    # Estimate word count
+    turn_data['word_count'] = turn_data['Word'].str.split().str.len()
 
     # Calculate midpoint time boundaries between turns
     # turn_data['Time_Boundary'] = (turn_data['End Time'].shift(1) + turn_data['Start Time']) / 2
