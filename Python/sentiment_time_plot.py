@@ -10,7 +10,7 @@ from scipy.interpolate import interp1d
 def plot_sentiment_time_series(word_level_data):
     
     # Create a binary column for "Contest" (1 if contested, 0 if uncontested)
-    word_level_data['is_contested'] = word_level_data['Contest'].apply(lambda x: 1 if x == 'contested' else 0)
+    # word_level_data['is_contested'] = word_level_data['Contested'].apply(lambda x: 1 if x == 1 else 0)
     word_level_data['Duration'] = word_level_data['End Time'] - word_level_data['Start Time']
 
     # Group by 'Speaker' and 'Turn' and perform aggregations
@@ -21,13 +21,13 @@ def plot_sentiment_time_series(word_level_data):
         avg_sentiment=('Sentiment', 'mean'),
         count_backchannels=('Backchannel', 'sum'),
         mean_overlaps=('Overlap', 'mean'),
-        mean_contested=('is_contested', 'mean'),
+        mean_contested=('Contested', 'mean'),
         avg_duration=('Duration', 'mean')
     ).reset_index()
 
     turn_speaker_data['midTime'] = (turn_speaker_data['start_time'] + turn_speaker_data['end_time']) / 2
-    # turn_speaker_data['Turn_duration'] = turn_speaker_data['end_time'] - turn_speaker_data['start_time']
-    turn_speaker_data['Turn_duration'] = (turn_speaker_data['start_time'] + turn_speaker_data['end_time']) / turn_speaker_data['midTime']
+    turn_speaker_data['Turn_duration'] = turn_speaker_data['end_time'] - turn_speaker_data['start_time']
+    # turn_speaker_data['Turn_duration'] = (turn_speaker_data['start_time'] + turn_speaker_data['end_time']) / turn_speaker_data['midTime']
     turn_speaker_data = turn_speaker_data.sort_values(by='midTime')
     
     # Group by 'Turn' and perform aggregations
@@ -38,12 +38,13 @@ def plot_sentiment_time_series(word_level_data):
         avg_sentiment=('Sentiment', 'mean'),
         count_backchannels=('Backchannel', 'sum'),
         mean_overlaps=('Overlap', 'mean'),
-        mean_contested=('is_contested', 'mean'),
+        mean_contested=('Contested', 'mean'),
         avg_duration=('Duration', 'mean')
     ).reset_index()
 
-    turn_level_data['Time'] = (turn_level_data['start_time'] + turn_level_data['end_time']) / 2
-    turn_level_data = turn_level_data.sort_values(by='Time')
+    turn_level_data['midTime'] = (turn_level_data['start_time'] + turn_level_data['end_time']) / 2
+    turn_level_data['Turn_duration'] = turn_level_data['end_time'] - turn_level_data['start_time']
+    turn_level_data = turn_level_data.sort_values(by='midTime')
 
 
     # Prepare the DataFrame by calculating midpoint times for each turn
@@ -64,6 +65,7 @@ def plot_sentiment_time_series(word_level_data):
         turn_speaker_data_A['Turn'], 
         turn_speaker_data_A['avg_word_count'],
         align = 'center',
+        # width = turn_speaker_data_A['Turn_duration'],
         width = 1,
         edgecolor='none',
         label="Speaker A",
@@ -76,6 +78,7 @@ def plot_sentiment_time_series(word_level_data):
         turn_speaker_data_B['Turn'], 
         turn_speaker_data_B['avg_word_count'],
         align = 'center',
+        # width = turn_speaker_data_B['Turn_duration'],
         width = 1,
         edgecolor='none',
         label="Speaker B",
@@ -98,6 +101,17 @@ def plot_sentiment_time_series(word_level_data):
     ax2.fill_between(turn_level_data['Turn'], turn_level_data['mean_contested'],
              label='Contested',
              alpha=0.3, step='mid', hatch='//', color = '#db1f48', facecolor = '#db1f48')
+    
+    # ax2.bar(
+    #     turn_level_data['midTime'], 
+    #     turn_level_data['mean_contested'],
+    #     align = 'center',
+    #     width = turn_level_data['Turn_duration'],
+    #     # edgecolor='none',
+    #     label="Contested",
+    #     hatch='//', color = '#db1f48', facecolor = '#db1f48',
+    #     alpha = .3
+    # )
     
     mask_Back = turn_level_data['count_backchannels'] != 0
     
