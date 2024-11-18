@@ -35,42 +35,31 @@ def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
     data['Backchannel'] = 0
     data['Overlap'] = 0
     data['Turn'] = 0
+    data['Contested'] = 0
     current_turn = 0
     prev_speaker = None
     prev_end_time = 0
-    
-    
+            
+            
     for i, row in data.iterrows():
         try:
             # Check if it starts before the previous word has ended (indicating overlap or backchannel)
             is_overlap = row['Start Time'] < prev_end_time and row['Speaker'] != prev_speaker
 
             # Classify as backchannel if surrounding speakers are different speakers,
-            # and start_time_diff is > 10 showing infrequent interjection
+            # and start_time_diff is > 5 showing infrequent interjection
             # and while next start time diff is < 5 showing that the previous speaker was still going
-            if data.at[i, 'start_time_diff'] > 10 and \
+            if data.at[i, 'start_time_diff'] > 5 and \
                 data.at[i+1, 'start_time_diff'] < 5 and \
                 data.at[i, 'Speaker'] != (data.at[i-1, 'Speaker'] and data.at[i+1, 'Speaker']):
                     data.at[i, 'Backchannel'] = 1
-                    data.at[i, 'Turn'] = current_turn
-            # elif is_overlap and not is_backchannel_word:
             elif is_overlap:
-                # Otherwise, classify as overlap if it's not a backchannel word
                 data.at[i, 'Overlap'] = 1
-                data.at[i, 'Turn'] = current_turn  # Keep the turn number the same
-            elif i != 0 and (data.at[i - 1, 'Backchannel'] == 1 or data.at[i - 1, 'Overlap'] == 1):
-                # print(i, row)
-                data.at[i, 'Turn'] = current_turn
-            else:
-                # Increment turn only if it's a new speaker and not overlapping
-                # or if the previous row was an overlap or backchannel
-                if row['Speaker'] != prev_speaker:
-                    current_turn += 1
-                data.at[i, 'Turn'] = current_turn
-                
+
             # Update previous speaker and end time trackers
             prev_speaker = row['Speaker']
             prev_end_time = row['End Time']
+            
             
         except Exception as e:
             error_message = f"Error processing file: {str(e)}"
@@ -78,17 +67,29 @@ def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
             
             continue
     
-    # Initialize the 'contest' column
-    data['Contest'] = 'uncontested'
-
     # Iterate through the DataFrame
-    for i in range(len(data)):
-        if data['Overlap'][i] == 1 and \
-            (np.sum(data['Overlap'][i-5:i]) == 0 and np.sum(data['Overlap'][i+1:i+5]) == 0):
-                data.loc[i, 'Contest'] = 'uncontested'
-        elif (data['Overlap'][i] == 1 and any(data['Overlap'][i+1:i+5] == 1)) or \
+    for i, row in data.iterrows():
+        if (data['Overlap'][i] == 1 and any(data['Overlap'][i+1:i+6] == 1)) or \
             (any(data['Overlap'][i-5:i+1] == 1) and any(data['Overlap'][i:i+5] == 1)):
-            data.loc[i, 'Contest'] = 'contested'
+            data.loc[i, 'Contested'] = 1
+            
+        if i == 0:
+            data.at[i, 'Turn'] = 1
+        elif data.at[i, 'Backchannel'] == 1: # ignore all backchannels for turn calculation
+            data.at[i, 'Turn'] = data['Turn'][i-1]
+        elif (i != 0 and data.at[i - 1, 'Backchannel'] == 1): # ignore if previous row was a backchannel
+                data.at[i, 'Turn'] = data['Turn'][i-1]
+        elif (i != 0 and (data.at[i, 'Contested'] == 1)): # All contested current and previous periods belong to speaker in prior turn
+            data.at[i, 'Turn'] = data['Turn'][i-1]
+        elif (i > 1
+              and data['Speaker'][i] != data['Speaker'][i-2]
+              and data['Contested'][i-1] == 1
+              and all(data['Contested'][i:i+5] == 0)): # End of contested period and on to new speaker
+                data.at[i, 'Turn'] = data['Turn'][i-1] + 1
+        elif (i != 0 and data['Speaker'][i] != data['Speaker'][i-1]): # different speaker
+            data.at[i, 'Turn'] = data['Turn'][i-1] + 1
+        else:
+            data.at[i, 'Turn'] = data['Turn'][i-1]
             
     return data
 
@@ -108,8 +109,8 @@ def turn_level_outcomes(data: pd.DataFrame) -> pd.DataFrame:
     turn_data['word_count'] = turn_data['Word'].str.split().str.len()
 
     # Calculate midpoint time boundaries between turns
-    # turn_data['Time_Boundary'] = (turn_data['End Time'].shift(1) + turn_data['Start Time']) / 2
-    # turn_data.loc[0, 'Time_Boundary'] = turn_data.loc[0, 'Start Time']  # Set the first boundary to its start time
+    turn_data['Time_Boundary'] = (turn_data['End Time'].shift(1) + turn_data['Start Time']) / 2
+    turn_data.loc[0, 'Time_Boundary'] = turn_data.loc[0, 'Start Time']  # Set the first boundary to its start time
     
     turn_data.rename(columns={'Word':'Sent', 'Start Time':'Turn Start', 'End Time': 'Turn End'}, inplace=True)
     
@@ -168,10 +169,15 @@ def stack_files_by_group(metadata, base_directory, output_directory):
                 try:
                     # Read the CSV file
                     df = pd.read_csv(file_path)
+                    
+                    df['Speaker_A'] = 0
+                    df['Speaker_B'] = 0
 
                     # Add a column for the file name and Speaker ('A' for the first file, 'B' for the second)
                     df['SourceFile'] = file
                     df['Speaker'] = 'A' if i == 0 else 'B'
+                    df['Speaker_A'] = 1 if i == 0 else 0
+                    df['Speaker_B'] = 1 if i != 0 else 0
 
                     # Append the dataframe to the list
                     group_dfs.append(df)
@@ -184,7 +190,7 @@ def stack_files_by_group(metadata, base_directory, output_directory):
                 stacked_df = pd.concat(group_dfs, ignore_index=True)
                 stacked_df = process_turns_and_overlaps(stacked_df)
                 turn_df = turn_level_outcomes(stacked_df)
-                merged_df = stacked_df.merge(turn_df, left_on = ['Turn', 'Speaker'], right_on = ['Turn', 'Speaker'])
+                merged_df = stacked_df.merge(turn_df, left_on = ['Turn', 'Speaker'], right_on = ['Turn', 'Speaker'], how = 'left')
                 save_group_stacked_data(merged_df, group, output_directory, log_file)
 
     return merged_df
