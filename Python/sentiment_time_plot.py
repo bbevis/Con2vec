@@ -68,8 +68,8 @@ def plot_sentiment_time_series(word_level_data, file):
         turn_speaker_data_A[x_var], 
         turn_speaker_data_A['avg_word_count'],
         align = 'center',
-        # width = turn_speaker_data_A['Turn_duration'],
-        width = 1,
+        width = turn_speaker_data_A['Turn_duration'],
+        # width = 1,
         edgecolor='none',
         label="Speaker A",
         color=speaker_palette[0],
@@ -81,8 +81,8 @@ def plot_sentiment_time_series(word_level_data, file):
         turn_speaker_data_B[x_var], 
         turn_speaker_data_B['avg_word_count'],
         align = 'center',
-        # width = turn_speaker_data_B['Turn_duration'],
-        width = 1,
+        width = turn_speaker_data_B['Turn_duration'],
+        # width = 1,
         edgecolor='none',
         label="Speaker B",
         color=speaker_palette[1],
@@ -166,7 +166,7 @@ def plot_sentiment_time_series(word_level_data, file):
     os.makedirs(save_dir, exist_ok=True)
     
     # Save plot to the specified directory
-    file_path = os.path.join('Output', 'super_May22', "plots", file.replace('.csv', '.png'))
+    file_path = os.path.join('Output', 'super_May22', "plots", f"{file.split()[0]} _ {x_var} .png")
     plt.savefig(file_path, format='png', dpi=300)  # Save as PNG with 300 dpi
 
     plt.close(fig)
@@ -175,8 +175,8 @@ def plot_sentiment_time_series(word_level_data, file):
 # Example usage
 # Assuming turn_data is your DataFrame
 # file = 'stacked_20240521_1823_WBLMayTR126E.csv'
-# file = 'stacked_20240521_1823_WBLMay8MQZR5.csv'
-file = 'stacked_20240522_1325_S3WBLME15F3C.csv'
+file = 'stacked_20240521_1823_WBLMay8MQZR5.csv'
+# file = 'stacked_20240522_1325_S3WBLME15F3C.csv'
 # file ='stacked_20240522_1325_S3WBLMRMZ83G.csv'
 turn_data = pd.read_csv(os.path.join('Output', 'super_May22', 'Segment_pairs', file))
 
