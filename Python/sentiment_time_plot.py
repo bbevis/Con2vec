@@ -162,12 +162,11 @@ def plot_sentiment_time_series(word_level_data, file):
     fig.subplots_adjust(top=0.85)  # Adjusts top spacing to fit the legend
     
     # Directory to save the plots
-    save_dir = "plots"
+    save_dir = os.path.join('Output', 'super_May22', "plots")
     os.makedirs(save_dir, exist_ok=True)
-
     
     # Save plot to the specified directory
-    file_path = os.path.join('Output', 'super_May22', save_dir, file)
+    file_path = os.path.join('Output', 'super_May22', "plots", file.replace('.csv', '.png'))
     plt.savefig(file_path, format='png', dpi=300)  # Save as PNG with 300 dpi
 
     plt.close(fig)
@@ -177,8 +176,8 @@ def plot_sentiment_time_series(word_level_data, file):
 # Assuming turn_data is your DataFrame
 # file = 'stacked_20240521_1823_WBLMayTR126E.csv'
 # file = 'stacked_20240521_1823_WBLMay8MQZR5.csv'
-# file = 'stacked_20240522_1325_S3WBLME15F3C.csv'
-file ='stacked_20240522_1325_S3WBLMRMZ83G.csv'
+file = 'stacked_20240522_1325_S3WBLME15F3C.csv'
+# file ='stacked_20240522_1325_S3WBLMRMZ83G.csv'
 turn_data = pd.read_csv(os.path.join('Output', 'super_May22', 'Segment_pairs', file))
 
 plot_sentiment_time_series(turn_data, file)
