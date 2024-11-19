@@ -7,7 +7,7 @@ import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 from scipy.interpolate import interp1d
 
-def plot_sentiment_time_series(word_level_data):
+def plot_sentiment_time_series(word_level_data, file):
     
     # Create a binary column for "Contest" (1 if contested, 0 if uncontested)
     # word_level_data['is_contested'] = word_level_data['Contested'].apply(lambda x: 1 if x == 1 else 0)
@@ -41,7 +41,8 @@ def plot_sentiment_time_series(word_level_data):
         mean_contested=('Contested', 'mean'),
         avg_duration=('Duration', 'mean')
     ).reset_index()
-
+    
+    
     turn_level_data['midTime'] = (turn_level_data['start_time'] + turn_level_data['end_time']) / 2
     turn_level_data['Turn_duration'] = turn_level_data['end_time'] - turn_level_data['start_time']
     turn_level_data = turn_level_data.sort_values(by='midTime')
@@ -60,9 +61,11 @@ def plot_sentiment_time_series(word_level_data):
     # Increase font sizes for readability
     plt.rcParams.update({'font.size': 20})
     
+    x_var = 'Turn'
+    
 
     ax1.bar(
-        turn_speaker_data_A['Turn'], 
+        turn_speaker_data_A[x_var], 
         turn_speaker_data_A['avg_word_count'],
         align = 'center',
         # width = turn_speaker_data_A['Turn_duration'],
@@ -75,7 +78,7 @@ def plot_sentiment_time_series(word_level_data):
     
 
     ax1.bar(
-        turn_speaker_data_B['Turn'], 
+        turn_speaker_data_B[x_var], 
         turn_speaker_data_B['avg_word_count'],
         align = 'center',
         # width = turn_speaker_data_B['Turn_duration'],
@@ -86,8 +89,8 @@ def plot_sentiment_time_series(word_level_data):
         alpha = .6
     )
     
-    x_new = np.linspace(turn_level_data['Turn'].min(), turn_level_data['Turn'].max(),500)
-    f = interp1d(turn_level_data['Turn'], turn_level_data['avg_sentiment'], kind='quadratic')
+    x_new = np.linspace(turn_level_data[x_var].min(), turn_level_data[x_var].max(),500)
+    f = interp1d(turn_level_data[x_var], turn_level_data['avg_sentiment'], kind='quadratic')
     y_smooth=f(x_new)
     
     ax2.plot(x_new,
@@ -98,7 +101,7 @@ def plot_sentiment_time_series(word_level_data):
     
     ax3 = ax2.twinx()
     
-    ax2.fill_between(turn_level_data['Turn'], turn_level_data['mean_contested'],
+    ax2.fill_between(turn_level_data[x_var], turn_level_data['mean_contested'],
              label='Contested',
              alpha=0.3, step='mid', hatch='//', color = '#db1f48', facecolor = '#db1f48')
     
@@ -115,7 +118,7 @@ def plot_sentiment_time_series(word_level_data):
     
     mask_Back = turn_level_data['count_backchannels'] != 0
     
-    ax2.scatter(turn_level_data['Turn'][mask_Back], turn_level_data['count_backchannels'][mask_Back] * 0,
+    ax2.scatter(turn_level_data[x_var][mask_Back], turn_level_data['count_backchannels'][mask_Back] * 0,
                  label='Backchannel',
                  s = 100,
                  marker = 'x',
@@ -123,7 +126,7 @@ def plot_sentiment_time_series(word_level_data):
     
     mask_Over = turn_level_data['mean_overlaps'] != 0
     
-    ax2.scatter(turn_level_data['Turn'][mask_Over], turn_level_data['mean_overlaps'][mask_Over] * 0,
+    ax2.scatter(turn_level_data[x_var][mask_Over], turn_level_data['mean_overlaps'][mask_Over] * 0,
                  label='Overlap',
                  marker = 'o',
                  s = 70,
@@ -133,7 +136,7 @@ def plot_sentiment_time_series(word_level_data):
     
     # Customize the plot
     # fig.title('Conversational Dynamics by Speaker', pad=100)
-    ax2.set_xlabel('Turn', fontsize = 20)
+    ax2.set_xlabel(x_var, fontsize = 20)
     ax1.set_ylabel('Word Count\n(log scale)', fontsize = 20)
     ax1.set_yscale('log')
     ax1.margins(x=0)
@@ -164,7 +167,7 @@ def plot_sentiment_time_series(word_level_data):
 
     
     # Save plot to the specified directory
-    file_path = os.path.join('Output', 'super_May22', save_dir, "sample_plot_4.png")
+    file_path = os.path.join('Output', 'super_May22', save_dir, file)
     plt.savefig(file_path, format='png', dpi=300)  # Save as PNG with 300 dpi
 
     plt.close(fig)
@@ -178,4 +181,4 @@ def plot_sentiment_time_series(word_level_data):
 file ='stacked_20240522_1325_S3WBLMRMZ83G.csv'
 turn_data = pd.read_csv(os.path.join('Output', 'super_May22', 'Segment_pairs', file))
 
-plot_sentiment_time_series(turn_data)
+plot_sentiment_time_series(turn_data, file)
