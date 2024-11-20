@@ -68,28 +68,46 @@ def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
             continue
     
     # Iterate through the DataFrame
+    turn = 1
     for i, row in data.iterrows():
+        previous_values = data['Speaker'].iloc[:i] # Get the values above the current row
+        unique_previous_values = previous_values[::-1].unique()
+        if len(unique_previous_values) >= 2:
+            second_to_last_unique_speaker = unique_previous_values[1]
+        
         if (data['Overlap'][i] == 1 and any(data['Overlap'][i+1:i+6] == 1)) or \
             (any(data['Overlap'][i-5:i+1] == 1) and any(data['Overlap'][i:i+5] == 1)):
             data.loc[i, 'Contested'] = 1
             
-        if i == 0:
-            data.at[i, 'Turn'] = 1
-        elif data.at[i, 'Backchannel'] == 1: # ignore all backchannels for turn calculation
-            data.at[i, 'Turn'] = data['Turn'][i-1]
-        elif (i != 0 and data.at[i - 1, 'Backchannel'] == 1): # ignore if previous row was a backchannel
-                data.at[i, 'Turn'] = data['Turn'][i-1]
-        elif (i != 0 and (data.at[i, 'Contested'] == 1)): # All contested current and previous periods belong to speaker in prior turn
-            data.at[i, 'Turn'] = data['Turn'][i-1]
+        if i != 0 and (data.at[i, 'Backchannel'] == 1 or data.at[i - 1, 'Backchannel'] == 1):
+            # ignore all current or previous backchannels for turn calculation
+            data.at[i, 'Turn'] = turn
+        elif (i != 0 and (data.at[i, 'Contested'] == 1)):
+            # All contested periods are part of previous speaker turn and speakers classified as 'both'
+            data.at[i, 'Turn'] = turn
+            data.at[i, 'Speaker'] = 'Both'
         elif (i > 1
-              and data['Speaker'][i] != data['Speaker'][i-2]
+              and data['Speaker'][i-1] == 'Both'
+              and second_to_last_unique_speaker != None
+              and second_to_last_unique_speaker == data['Speaker'][i]
+              and data['Contested'][i-1] == 1): # Keep same turn number if speaker BEFORE contest was same speaker
+                data.at[i, 'Turn'] = turn
+        elif (i > 1
+              and data['Speaker'][i] != data['Speaker'][i-1] # last speaker is different
               and data['Contested'][i-1] == 1
-              and all(data['Contested'][i:i+5] == 0)): # End of contested period and on to new speaker
-                data.at[i, 'Turn'] = data['Turn'][i-1] + 1
+              and second_to_last_unique_speaker != None
+              and second_to_last_unique_speaker != data['Speaker'][i]
+              and all(data['Contested'][i:i+5] == 0)): # Increment turn due to end of contested period speaker is different to speaker before contest
+                turn += 1
+                data.at[i, 'Turn'] = turn
         elif (i != 0 and data['Speaker'][i] != data['Speaker'][i-1]): # different speaker
-            data.at[i, 'Turn'] = data['Turn'][i-1] + 1
+            turn += 1
+            data.at[i, 'Turn'] = turn
         else:
-            data.at[i, 'Turn'] = data['Turn'][i-1]
+            data.at[i, 'Turn'] = turn
+
+            
+            
             
     return data
 
