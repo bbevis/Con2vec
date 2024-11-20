@@ -51,6 +51,7 @@ def plot_sentiment_time_series(word_level_data, file):
     # Prepare the DataFrame by calculating midpoint times for each turn
     turn_speaker_data_A = turn_speaker_data[turn_speaker_data['Speaker'] == 'A']
     turn_speaker_data_B = turn_speaker_data[turn_speaker_data['Speaker'] == 'B']
+    turn_speaker_data_Both = turn_speaker_data[turn_speaker_data['Speaker'] == 'Both']
 
     # Initialize a figure
     fig, (ax1, ax2) = plt.subplots(2, 1, layout='constrained', figsize=(12, 8))
@@ -87,6 +88,18 @@ def plot_sentiment_time_series(word_level_data, file):
         label="Speaker B",
         color=speaker_palette[1],
         alpha = .6
+    )
+    
+    ax1.bar(
+        turn_speaker_data_Both[x_var], 
+        turn_speaker_data_Both['avg_word_count'],
+        align = 'center',
+        # width = turn_speaker_data_Both['Turn_duration'],
+        width = 1,
+        edgecolor='none',
+        label="Speaker A & B",
+        alpha = .3,
+        hatch='//', color = '#db1f48', facecolor = '#db1f48'
     )
     
     x_new = np.linspace(turn_level_data[x_var].min(), turn_level_data[x_var].max(),500)
@@ -137,7 +150,7 @@ def plot_sentiment_time_series(word_level_data, file):
     # Customize the plot
     # fig.title('Conversational Dynamics by Speaker', pad=100)
     ax2.set_xlabel(x_var, fontsize = 20)
-    ax1.set_ylabel('Word Count\n(log scale)', fontsize = 20)
+    ax1.set_ylabel('Word Count (log-scale)', fontsize = 20)
     ax1.set_yscale('log')
     ax1.margins(x=0)
     ax2.set_ylabel('Sentiment', fontsize = 20)
@@ -151,7 +164,7 @@ def plot_sentiment_time_series(word_level_data, file):
     ax2.tick_params(axis='both', which='major', labelsize=20)
     fig.legend(loc='upper center',
             #    bbox_to_anchor=(.5, 1.05),
-               ncol=3,
+               ncol=4,
                frameon=False)
     
     # Remove grid lines for a cleaner look
@@ -166,7 +179,7 @@ def plot_sentiment_time_series(word_level_data, file):
     os.makedirs(save_dir, exist_ok=True)
     
     # Save plot to the specified directory
-    file_path = os.path.join('Output', 'super_May22', "plots", f"{file.split()[0]} _ {x_var} .png")
+    file_path = os.path.join('Output', 'super_May22', "plots", f"{file.rstrip('.csv')} _ {x_var} .png")
     plt.savefig(file_path, format='png', dpi=300)  # Save as PNG with 300 dpi
 
     plt.close(fig)
