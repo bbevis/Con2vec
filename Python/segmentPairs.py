@@ -137,7 +137,7 @@ def turn_level_outcomes(data: pd.DataFrame) -> pd.DataFrame:
 def save_group_stacked_data(data: pd.DataFrame, group_id: str, output_dir: str, log_file):
     """Save each group's stacked data to a CSV file and log the action."""
     try:
-        output_path = os.path.join(output_dir, f'stacked_{group_id}.csv')
+        output_path = os.path.join(output_dir, f'{group_id}.csv')
         data.to_csv(output_path, index=False)
         logging.info("Saved stacked file for group %s at %s", group_id, output_path)
     except Exception as e:
