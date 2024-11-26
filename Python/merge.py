@@ -19,6 +19,8 @@ for file_name in os.listdir(folder_path):
         
         # Append the data to the combined DataFrame
         combined_data = pd.concat([combined_data, df], ignore_index=True)
+        
+combined_data['Pair_Speaker_turn'] = combined_data['PairID'] + '_' + combined_data['Speaker'] + '_' + combined_data['Turn'].astype(str)
 
 # Save the final combined DataFrame to a CSV file
 combined_data.to_csv(output_file, index=False)

@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from textblob import TextBlob
+from sklearn.preprocessing import MinMaxScaler
 import logging
 
 # Configure logging to output errors to a file and info to the console
@@ -31,6 +32,8 @@ def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Updated DataFrame with turn, overlap, backchannel, and contest annotations.
     """
+    data['Speaker_original'] = data['Speaker']
+    
     data = data.sort_values(by='Start Time').reset_index(drop=True)
     data['Backchannel'] = 0
     data['Overlap'] = 0
@@ -107,30 +110,42 @@ def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
             data.at[i, 'Turn'] = turn
 
             
-            
-            
     return data
 
 def turn_level_outcomes(data: pd.DataFrame) -> pd.DataFrame:
     
+    # Normalize the Start and End Time columns
+    scaler = MinMaxScaler()
+    data[['Normalized_Start', 'Normalized_End']] = scaler.fit_transform(data[['Start Time', 'End Time']])
+
+    
     # Aggregate words by turn
-    turn_data = data.groupby(['Turn', 'Speaker']).agg({
+    turn_data = data.groupby(['Turn', 'Speaker', 'Speaker_original']).agg({
         'Word': lambda x: ' '.join(x),
-        'Start Time': 'min',
-        'End Time': 'max'
+        'Normalized_Start': 'min',
+        'Normalized_End': 'max'
     }).reset_index()
 
+    turn_data['Speaker_original_turn'] = turn_data['Speaker_original'] + '_' + turn_data['Turn'].astype(str) + \
+        np.where(turn_data['Speaker'].str.contains('Both'), '_contested', '')
+        
+    turn_data['Speaker_turn'] = turn_data['Speaker'] + '_' + turn_data['Turn'].astype(str)
+    
     # Calculate sentiment for each turn
     turn_data['Sentiment'] = turn_data['Word'].apply(lambda text: TextBlob(text).sentiment.polarity)
     
     # Estimate word count
     turn_data['word_count'] = turn_data['Word'].str.split().str.len()
-
-    # Calculate midpoint time boundaries between turns
-    turn_data['Time_Boundary'] = (turn_data['End Time'].shift(1) + turn_data['Start Time']) / 2
-    turn_data.loc[0, 'Time_Boundary'] = turn_data.loc[0, 'Start Time']  # Set the first boundary to its start time
     
-    turn_data.rename(columns={'Word':'Sent', 'Start Time':'Turn Start', 'End Time': 'Turn End'}, inplace=True)
+    # Calculate boundaries
+    turn_data['Turn_Boundary'] = (turn_data['Normalized_Start'].shift(1) + turn_data['Normalized_End']) / 2
+    turn_data.loc[0, 'Turn_Boundary'] = turn_data.loc[0, 'Normalized_Start']
+
+
+    
+    turn_data.rename(columns={'Word':'Sent', 'Normalized_Start':'Turn Start', 'Normalized_End': 'Turn End'}, inplace=True)
+    
+    turn_data = turn_data.drop(columns = 'Speaker_original')
     
     return turn_data
     
@@ -192,10 +207,12 @@ def stack_files_by_group(metadata, base_directory, output_directory):
                     df['Speaker_B'] = 0
 
                     # Add a column for the file name and Speaker ('A' for the first file, 'B' for the second)
-                    df['SourceFile'] = file
+                    df['PairID'] = group
+                    df['PersonID'] = file
                     df['Speaker'] = 'A' if i == 0 else 'B'
                     df['Speaker_A'] = 1 if i == 0 else 0
                     df['Speaker_B'] = 1 if i != 0 else 0
+                    
 
                     # Append the dataframe to the list
                     group_dfs.append(df)
@@ -209,6 +226,7 @@ def stack_files_by_group(metadata, base_directory, output_directory):
                 stacked_df = process_turns_and_overlaps(stacked_df)
                 turn_df = turn_level_outcomes(stacked_df)
                 merged_df = stacked_df.merge(turn_df, left_on = ['Turn', 'Speaker'], right_on = ['Turn', 'Speaker'], how = 'left')
+                
                 save_group_stacked_data(merged_df, group, output_directory, log_file)
 
     return merged_df
