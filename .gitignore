@@ -11,9 +11,9 @@ Archive/
 Output/super_icbs
 Output/super_May22/Video
 Output/super_May22/Vocal
-# Output/super_May22/Text
+Output/super_May22/Text
 Output/super_May22/Segments
-# Output/super_May22/Segment_pairs
+Output/super_May22/Segment_pairs
 Output/super_May22/Turns
 # C extensions
 *.so
