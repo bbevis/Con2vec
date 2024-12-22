@@ -119,16 +119,16 @@ if __name__ == '__main__':
     # extract_raw_features(data_directory, 'video', video_filenames, 'Output/super_May22/Video/')
     
     ############ vocal features ############################
-    # vocal_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Vocal/')
-    # print(vocal_filenames)
+    vocal_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Vocal/')
+    print(vocal_filenames)
 
-    # extract_raw_features(data_directory, 'vocal', vocal_filenames, 'Output/super_May22/Vocal/')
+    extract_raw_features(data_directory, 'vocal', vocal_filenames, 'Output/super_May22/Vocal/')
     
     ############ text features ############################
-    text_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Text/')
-    print(text_filenames)
+    # text_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Text/')
+    # print(text_filenames)
 
-    extract_raw_features(data_directory, 'text', text_filenames, 'Output/super_May22/Text/')
+    # extract_raw_features(data_directory, 'text', text_filenames, 'Output/super_May22/Text/')
     
     ############ run time ############################
     end_time = time.time()
