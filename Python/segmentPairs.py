@@ -109,46 +109,11 @@ def process_turns_and_overlaps(data: pd.DataFrame) -> pd.DataFrame:
         else:
             data.at[i, 'Turn'] = turn
 
+    data['Speaker_turn'] = data['Speaker'] + '_' + data['Turn'].astype(str)
             
     return data
 
-def turn_level_outcomes(data: pd.DataFrame) -> pd.DataFrame:
-    
-    # Normalize the Start and End Time columns
-    scaler = MinMaxScaler()
-    data[['Normalized_Start', 'Normalized_End']] = scaler.fit_transform(data[['Start Time', 'End Time']])
 
-    
-    # Aggregate words by turn
-    turn_data = data.groupby(['Turn', 'Speaker', 'Speaker_original']).agg({
-        'Word': lambda x: ' '.join(x),
-        'Normalized_Start': 'min',
-        'Normalized_End': 'max'
-    }).reset_index()
-
-    turn_data['Speaker_original_turn'] = turn_data['Speaker_original'] + '_' + turn_data['Turn'].astype(str) + \
-        np.where(turn_data['Speaker'].str.contains('Both'), '_contested', '')
-        
-    turn_data['Speaker_turn'] = turn_data['Speaker'] + '_' + turn_data['Turn'].astype(str)
-    
-    # Calculate sentiment for each turn
-    turn_data['Sentiment'] = turn_data['Word'].apply(lambda text: TextBlob(text).sentiment.polarity)
-    
-    # Estimate word count
-    turn_data['word_count'] = turn_data['Word'].str.split().str.len()
-    
-    # Calculate boundaries
-    turn_data['Turn_Boundary'] = (turn_data['Normalized_Start'].shift(1) + turn_data['Normalized_End']) / 2
-    turn_data.loc[0, 'Turn_Boundary'] = turn_data.loc[0, 'Normalized_Start']
-
-
-    
-    turn_data.rename(columns={'Word':'Sent', 'Normalized_Start':'Turn Start', 'Normalized_End': 'Turn End'}, inplace=True)
-    
-    turn_data = turn_data.drop(columns = 'Speaker_original')
-    
-    return turn_data
-    
 def save_group_stacked_data(data: pd.DataFrame, group_id: str, output_dir: str, log_file):
     """Save each group's stacked data to a CSV file and log the action."""
     try:
@@ -224,12 +189,10 @@ def stack_files_by_group(metadata, base_directory, output_directory):
             if group_dfs:
                 stacked_df = pd.concat(group_dfs, ignore_index=True)
                 stacked_df = process_turns_and_overlaps(stacked_df)
-                turn_df = turn_level_outcomes(stacked_df)
-                merged_df = stacked_df.merge(turn_df, left_on = ['Turn', 'Speaker'], right_on = ['Turn', 'Speaker'], how = 'left')
-                
-                save_group_stacked_data(merged_df, group, output_directory, log_file)
 
-    return merged_df
+                save_group_stacked_data(stacked_df, group, output_directory, log_file)
+
+    return stacked_df
 
 if __name__ == "__main__":
     base_directory = os.path.join('Output', 'super_May22', 'Text')

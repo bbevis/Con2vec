@@ -52,10 +52,10 @@ class vocal_features:
             Data Storage: All extracted features are stored in a pandas DataFrame, and then saved as a CSV file.
         """
 
-        logging.info(f"Loading audio file from {self.data_path}")
+        logging.info(f"Loading audio file from {self.data}")
         try:
             # Load audio file and extract sampling rate
-            y, sr = librosa.load(self.data_path, sr=None)
+            y, sr = librosa.load(self.data, sr=None)
         except Exception as e:
             logging.error(f"Error loading audio file: {e}")
             return None
@@ -94,7 +94,7 @@ class vocal_features:
         
         df = pd.DataFrame(
             {
-                "Time_ms": librosa.frames_to_time(range(min_length), sr=sr) * 1000,
+                "Time_s": librosa.frames_to_time(range(min_length), sr=sr),
                 "Pitch_Hz": pitch_values[:min_length],
                 "RMS": rms[:min_length],
                 "Pulse": pulse[:min_length],
