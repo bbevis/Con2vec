@@ -19,10 +19,10 @@ for file_name in os.listdir(folder_path):
         # Append the data to the combined DataFrame
         combined_data = pd.concat([combined_data, df], ignore_index=True)
         
-combined_data['Pair_Speaker_turn'] = combined_data['PairID'] + '_' + combined_data['Speaker'] + '_' + combined_data['Turn'].astype(str)
+combined_data['Pair_Speaker_turn'] = combined_data['PairID'] + '_' + combined_data['Speaker'] + '_' + combined_data['Speaker_original'] + '_' + combined_data['Turn'].astype(str)
 
 
-turn_data = combined_data.groupby(['PairID','Turn', 'Speaker', 'Speaker_turn','Pair_Speaker_turn']).agg({
+turn_data = combined_data.groupby(['PairID','PersonID', 'Turn', 'Speaker', 'Speaker_original', 'Speaker_turn','Pair_Speaker_turn']).agg({
         'Word': lambda x: ' '.join(x),
         'Start Time': 'min',
         'End Time': 'max'
@@ -38,10 +38,11 @@ turn_data.rename(columns={'Word':'Sent', 'Start Time':'Turn Start', 'End Time': 
 
 
 # Select the required columns
-selected_columns = ['Pair_Speaker_turn', "PairID",  "Speaker",
+selected_columns = ['Pair_Speaker_turn', "PairID",  "PersonID","Speaker", "Speaker_original",
                     "Turn", "Speaker_turn",  "Turn_Boundary", "Turn Start", "Turn End"]
 turn_data = turn_data[selected_columns]
 
+# print(combined_data[['PairID', 'PersonID', 'Speaker']])
 
 # Remove duplicate rows based on the 'Speaker_turn' column
 # unique_data = turn_data.drop_duplicates(subset="Pair_Person_turn")

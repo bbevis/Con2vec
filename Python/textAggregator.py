@@ -20,9 +20,9 @@ for file_name in os.listdir(folder_path):
         # Append the data to the combined DataFrame
         combined_data = pd.concat([combined_data, df], ignore_index=True)
         
-combined_data['Pair_Speaker_turn'] = combined_data['PairID'] + '_' + combined_data['Speaker'] + '_' + combined_data['Turn'].astype(str)
+combined_data['Pair_Speaker_turn'] = combined_data['PairID'] + '_' + combined_data['Speaker'] + '_' + combined_data['Speaker_original'] + '_' + combined_data['Turn'].astype(str)
 
-turn_data = combined_data.groupby(['Pair_Speaker_turn', 'PairID','Speaker', 'Turn']).agg({
+turn_data = combined_data.groupby(['Pair_Speaker_turn', 'PairID','PersonID', 'Speaker', 'Speaker_original', 'Turn']).agg({
         'Word': lambda x: ' '.join(x),
         'Start Time': 'min',
         'End Time': 'max',
