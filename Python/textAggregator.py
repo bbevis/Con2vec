@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 from textblob import TextBlob
+from team_comm_tools import FeatureBuilder
 
 # Define the paths
 folder_path = os.path.join('Output', 'super_May22', 'Segment_Pairs')
@@ -40,6 +41,14 @@ turn_data['Sentiment'] = turn_data['Word'].apply(lambda text: TextBlob(text).sen
 turn_data['word_count'] = turn_data['Word'].str.split().str.len()
 
 turn_data = turn_data.sort_values(by=['PairID', 'Start Time'])
+
+my_feature_builder = FeatureBuilder(input_df = turn_data,
+                                    conversation_id_col = 'PairID',
+                                    speaker_id_col = 'PersonID',
+                                    message_col = 'Word',
+                                    timestamp_col= 'Start Time',
+                                    output_file_base = './Output/super_May22/my_output.csv')
+my_feature_builder.featurize()
 
 # Save the result to a new CSV file
 file_out = os.path.join('Output', 'super_May22', 'Text_agg.csv')
