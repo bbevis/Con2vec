@@ -64,16 +64,18 @@ class vocal_features:
         
         # Estimate pitch and magnitude from soundwave
         pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
-        rms = librosa.feature.rms(y=y)[0]  # Root Mean Square Energy
+        loudness = librosa.feature.rms(y=y)[0]  # Root Mean Square Energy
         pulse = librosa.onset.onset_strength(y=y, sr=sr)  # Pulse (onset strength)
-        tonnetz = librosa.feature.tonnetz(y=y, sr=sr)  # Tonnetz features (tonal centroid)
-        zcr = librosa.feature.zero_crossing_rate(y=y)[0]  # Zero-Crossing Rate
-        mfccs = librosa.feature.mfcc(y=y, sr=sr)  # MFCCs
-        spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)[0]  # Spectral Centroid
-        spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)[0]  # Spectral Bandwidth
-        spectral_contrast = librosa.feature.spectral_contrast(y=y, sr=sr)  # Spectral Contrast
-        non_silent_intervals = librosa.effects.split(y, top_db=20) # Compute durations and pauses
-        durations = np.diff(librosa.frames_to_time(non_silent_intervals, sr=sr), axis=1).flatten()
+        # tonnetz = librosa.feature.tonnetz(y=y, sr=sr)  # Tonnetz features (tonal centroid)
+        speech_crispiness = librosa.feature.zero_crossing_rate(y=y)[0]  # Zero-Crossing Rate
+        # mfccs = librosa.feature.mfcc(y=y, sr=sr)  # MFCCs
+        speech_brightness = librosa.feature.spectral_centroid(y=y, sr=sr)[0]  # Spectral Centroid
+        frequency_spread = librosa.feature.spectral_bandwidth(y=y, sr=sr)[0]  # Spectral Bandwidth
+        speech_clarity = librosa.feature.spectral_contrast(y=y, sr=sr)[0]  # Spectral Contrast
+        tonal_complexity = librosa.feature.spectral_flatness(y=y)[0] # Measures how tonal (harmonic) vs. noise-like the speech is.
+
+        # non_silent_intervals = librosa.effects.split(y, top_db=20) # Compute durations and pauses
+        # durations = np.diff(librosa.frames_to_time(non_silent_intervals, sr=sr), axis=1).flatten()
         
         # Extract the timestamps for pitch, pulse, rms, and tonnetz
         time_stamps_pitch = librosa.frames_to_time(range(pitches.shape[1]), sr=sr)
@@ -89,32 +91,34 @@ class vocal_features:
                 pitch_values.append(np.nan)  # Use NaN for frames with no valid pitch
 
         # Ensure the lengths of feature arrays match
-        min_length = min(len(rms), len(pulse), len(zcr), len(spectral_centroid), len(spectral_bandwidth), len(spectral_contrast[0]))
+        min_length = min(len(loudness), len(pulse), len(speech_crispiness), len(speech_brightness), len(frequency_spread), len(speech_clarity), len(tonal_complexity))
         # print(min_length)
         
         df = pd.DataFrame(
             {
                 "Time_s": librosa.frames_to_time(range(min_length), sr=sr),
-                "Pitch_Hz": pitch_values[:min_length],
-                "RMS": rms[:min_length],
+                "Pitch": pitch_values[:min_length],
+                "Loudness": loudness[:min_length],
                 "Pulse": pulse[:min_length],
-                "ZCR": zcr[:min_length],
-                "Spectral_Centroid": spectral_centroid[:min_length],
-                "Spectral_Bandwidth": spectral_bandwidth[:min_length]
+                "Speech_crispiness": speech_crispiness[:min_length],
+                "Speech_brightness": speech_brightness[:min_length],
+                "Frequency_spread": frequency_spread[:min_length],
+                "Speech_clarity": speech_clarity[:min_length],
+                "Tonal_complexity": tonal_complexity[:min_length]
             }
             )
 
         # Add Spectral Contrast as individual columns
-        for i in range(spectral_contrast.shape[0]):
-            df[f"Spectral_Contrast_{i+1}"] = spectral_contrast[i, :min_length]
+        # for i in range(speech_clarity.shape[0]):
+        #     df[f"Speech_clarity_{i+1}"] = speech_clarity[i, :min_length]
             
         # Add Tonnetz features as individual columns
-        for i in range(tonnetz.shape[0]):
-            df[f"Tonnetz_{i+1}"] = tonnetz[i, :min_length]
+        # for i in range(tonnetz.shape[0]):
+        #     df[f"Tonnetz_{i+1}"] = tonnetz[i, :min_length]
             
         # Add MFCCs as individual columns
-        for i in range(mfccs.shape[0]):
-            df[f"MFCC_{i+1}"] = mfccs[i, :min_length]
+        # for i in range(mfccs.shape[0]):
+        #     df[f"MFCC_{i+1}"] = mfccs[i, :min_length]
             
         # Print the first 10 rows of the DataFrame
         # print(df.head(10))
