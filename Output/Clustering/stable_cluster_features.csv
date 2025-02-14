@@ -1,0 +1,27 @@
+,Feature,Frequency,Stability Score
+0,discussionDepth,0,0.0
+1,discussionDisagreement,0,0.0
+24,viability_1,0,0.0
+23,goal_similarity,0,0.0
+22,decision_leadership_2,0,0.0
+21,decision_leadership_1,0,0.0
+20,conflict_4,0,0.0
+19,conflict_3,0,0.0
+18,conflict_2,0,0.0
+17,conflict_1,0,0.0
+16,agreement_binary,0,0.0
+15,selfPerspectiveTaking,0,0.0
+14,polite,0,0.0
+13,partnerTalking,0,0.0
+12,partnerPerspectiveTaking,0,0.0
+11,partnerListening,0,0.0
+10,liking,0,0.0
+9,defensive,0,0.0
+8,selfVoice,0,0.0
+7,selfSpeakUp,0,0.0
+6,selfLearned,0,0.0
+5,selfInsight,0,0.0
+4,selfAnxious,0,0.0
+3,discussionTension,0,0.0
+2,discussionEnjoy,0,0.0
+25,viability_2,0,0.0
