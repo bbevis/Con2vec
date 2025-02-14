@@ -1,4 +1,3 @@
 Cluster,Top Features,Positive SHAP Scores,Negative SHAP Scores
-Open Collaboration,"partnerListening, viability_1, viability_2, conflict_3, conflict_4","0.791, 0.411, 0.317, 0.307, 0.288",
-Unproductive Engagement,"viability_1, selfVoice, selfAnxious, discussionDisagreement, viability_2","0.631, 0.348, 0.275, 0.197, 0.090",
-Productive Disagreement,"viability_1, partnerListening, conflict_4, agreement_binary, discussionTension","0.931, 0.862, 0.851, 0.410, 0.226",
+Constructive Disagreement,"agreement_binary, selfAnxious, selfVoice, decision_leadership_1, liking",,
+Oppositional Impasse,"partnerListening, viability_2, conflict_2, conflict_3, selfInsight","1.070, 0.903, 0.387, 0.272, 0.262",
