@@ -20,8 +20,9 @@ Output/super_May22/VideoAudio
 # C extensions
 *.so
 
-# API keys
+# API keys & other secrets
 config.py
+gcs_credentials.json
 
 # Distribution / packaging
 .Python
