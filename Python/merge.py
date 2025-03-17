@@ -67,6 +67,7 @@ def merge_files(base_file, text_file, vocal_file, output_file):
 base_file = os.path.join('Output', 'super_May22', 'TurnIDs.csv') # Base file
 text_file = os.path.join('Output', 'super_May22', 'Text_agg.csv')  # Text aggregation file
 vocal_file = os.path.join('Output', 'super_May22', 'Vocal_agg.csv')   # Vocal aggregation file
+visual_file = os.path.join('Output', 'super_May22', 'Visual_agg.csv')   # Visuall aggregation file
 output_file = os.path.join('Output', 'super_May22', 'Merged_Data.csv') # Output file
 
 # Execute the merging process
