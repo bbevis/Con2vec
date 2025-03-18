@@ -113,10 +113,10 @@ if __name__ == '__main__':
     # metadata.to_csv('./Output/super_May22/files_metadata.csv', index=False)
 
     ############ video features ############################
-    video_filenames = get_file_list(1, 800, 'video','Output/super_May22/Video/')
-    print(video_filenames)
+    # video_filenames = get_file_list(1, 800, 'video','Output/super_May22/Video/')
+    # print(video_filenames)
 
-    extract_raw_features(data_directory, 'video', video_filenames, 'Output/super_May22/Video/')
+    # extract_raw_features(data_directory, 'video', video_filenames, 'Output/super_May22/Video/')
     
     ############ vocal features ############################
     # vocal_filenames = get_file_list(0, 10, 'vocal','Output/super_May22/Vocal/')
