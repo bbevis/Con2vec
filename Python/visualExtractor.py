@@ -248,3 +248,4 @@ if __name__ == '__main__':
     end_time = time.time()
     elapsed_time = (end_time - start_time) / 60
     print(f"⏳ Total execution time: {elapsed_time:.2f} minutes")
+

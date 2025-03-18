@@ -50,19 +50,23 @@ for index, row in turn_data.iterrows():
     filtered_data = audio_data[(audio_data['Time_s'] >= start_time) & (audio_data['Time_s'] < end_time)]
     
     # Perform aggregation (mean, sum, etc.)
+    # Perform aggregation (mean of each feature)
     aggregated = {
         'Pair_Speaker_turn': turn_id,
         'PairID': folder_name,
         'PersonID': file_name,
         'Turn Start': start_time,
         'Turn End': end_time,
-        'Rms': filtered_data['RMS'].mean(),
-        'Pitch': filtered_data['Pitch_Hz'].mean(),
+        'Pitch': filtered_data['Pitch'].mean(),
+        'Loudness': filtered_data['Loudness'].mean(),
         'Pulse': filtered_data['Pulse'].mean(),
-        'ZCR': filtered_data['ZCR'].mean(),
-        'Spectral_Centroid': filtered_data['Spectral_Centroid'].mean(),
-        'Spectral_Bandwidth': filtered_data['Spectral_Bandwidth'].mean(),
+        'Speech_crispiness': filtered_data['Speech_crispiness'].mean(),
+        'Speech_brightness': filtered_data['Speech_brightness'].mean(),
+        'Frequency_spread': filtered_data['Frequency_spread'].mean(),
+        'Speech_clarity': filtered_data['Speech_clarity'].mean(),
+        'Tonal_complexity': filtered_data['Tonal_complexity'].mean(),
     }
+
     
     aggregated_results.append(aggregated)
     
