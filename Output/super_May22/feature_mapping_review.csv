@@ -1,0 +1,28 @@
+New Feature Name,Original Features
+Pitch,Pitch
+Vocal Intensity,"Loudness, Pulse"
+Vocal Articulation,"Speech_crispiness, Speech_brightness, Frequency_spread, Tonal_complexity"
+Vocal Clarity,Speech_clarity
+SquintPuffSneer,"_neutral, cheekPuff, eyeSquintRight, mouthPressLeft, noseSneerRight"
+CompressedContortion,"browDownLeft, browDownRight, mouthLeft"
+BrowUp,"browInnerUp, browOuterUpLeft, browOuterUpRight"
+CheekPuffSneer,"cheekSquintLeft, cheekPuff, cheekSquintRight, mouthUpperUpLeft, mouthUpperUpRight, noseSneerRight"
+Blink,"eyeBlinkLeft, eyeBlinkRight, eyeSquintRight"
+LookDown,"eyeLookDownLeft, eyeLookDownRight"
+LookRight,"eyeLookInLeft, eyeLookOutRight"
+LookLeft,"eyeLookInRight, eyeLookOutLeft"
+LookUp,"eyeLookUpLeft, eyeLookUpRight"
+BlinkRight,"eyeSquintLeft, eyeBlinkRight, eyeSquintRight"
+EyesWide,"eyeWideLeft, eyeWideRight"
+OpenMouth,"jawForward, cheekPuff, mouthLowerDownLeft, mouthLowerDownRight, mouthStretchLeft, mouthStretchRight, mouthUpperUpLeft, mouthUpperUpRight"
+JawLeft,"jawLeft, jawOpen"
+JawRight,jawRight
+mouthClose_openJaw,"mouthClose, jawOpen, mouthRollUpper"
+mouthDimpleLeft,mouthDimpleLeft
+mouthDimpleRight,"mouthDimpleRight, mouthPressRight"
+SkepticalRight,"mouthFrownLeft, cheekSquintRight, mouthFrownRight, mouthStretchRight, noseSneerRight"
+SneeringPucker,"mouthFunnel, mouthPucker, mouthUpperUpRight, noseSneerLeft"
+mouthRight,mouthRight
+mouthRoll,"mouthRollLower, mouthRollUpper"
+mouthShrug,"mouthShrugLower, mouthShrugUpper"
+Smile,"mouthSmileLeft, cheekPuff, mouthSmileRight"

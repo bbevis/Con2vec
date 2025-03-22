@@ -1,0 +1,27 @@
+New Feature Name,Original Features
+Agg_Pitch,Pitch
+Agg_Loudness,"Loudness, Pulse"
+Agg_Speech,Speech_clarity
+Agg_,"_neutral, cheekPuff, eyeSquintRight, mouthPressLeft, noseSneerRight"
+Agg_browDownLeft,"browDownLeft, browDownRight, mouthLeft"
+Agg_browInnerUp,"browInnerUp, browOuterUpLeft, browOuterUpRight"
+Agg_cheekSquintLeft,"cheekSquintLeft, cheekPuff, cheekSquintRight, mouthUpperUpLeft, mouthUpperUpRight, noseSneerRight"
+Agg_eyeBlinkLeft,"eyeBlinkLeft, eyeBlinkRight, eyeSquintRight"
+Agg_eyeLookDownLeft,"eyeLookDownLeft, eyeLookDownRight"
+Agg_eyeLookInLeft,"eyeLookInLeft, eyeLookOutRight"
+Agg_eyeLookInRight,"eyeLookInRight, eyeLookOutLeft"
+Agg_eyeLookUpLeft,"eyeLookUpLeft, eyeLookUpRight"
+Agg_eyeSquintLeft,"eyeSquintLeft, eyeBlinkRight, eyeSquintRight"
+Agg_eyeWideLeft,"eyeWideLeft, eyeWideRight"
+Agg_jawForward,"jawForward, cheekPuff, mouthLowerDownLeft, mouthLowerDownRight, mouthStretchLeft, mouthStretchRight, mouthUpperUpLeft, mouthUpperUpRight"
+Agg_jawLeft,"jawLeft, jawOpen"
+Agg_jawRight,jawRight
+Agg_mouthClose,"mouthClose, jawOpen, mouthRollUpper"
+Agg_mouthDimpleLeft,mouthDimpleLeft
+Agg_mouthDimpleRight,"mouthDimpleRight, mouthPressRight"
+Agg_mouthFrownLeft,"mouthFrownLeft, cheekSquintRight, mouthFrownRight, mouthStretchRight, noseSneerRight"
+Agg_mouthFunnel,"mouthFunnel, mouthPucker, mouthUpperUpRight, noseSneerLeft"
+Agg_mouthRight,mouthRight
+Agg_mouthRollLower,"mouthRollLower, mouthRollUpper"
+Agg_mouthShrugLower,"mouthShrugLower, mouthShrugUpper"
+Agg_mouthSmileLeft,"mouthSmileLeft, cheekPuff, mouthSmileRight"
