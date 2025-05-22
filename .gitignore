@@ -141,6 +141,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venv_imperial
 env/
 venv/
 ENV/
