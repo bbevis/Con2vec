@@ -1,0 +1,5 @@
+Negotiation_Category,N Conversations,Avg. No. of Turns,Avg. Prop. Contested Turns,Avg. Sentiment,Avg. Word Count per Turn,Duration (min),Conflict,team_viability
+Apathetic,6,55.50 (55.67),29.50 (30.99),0.13 (0.04),22.11 (11.99),13.28 (8.06),3.19 (0.30),4.79 (0.62)
+Constructive,10,64.40 (25.50),41.10 (18.89),0.13 (0.02),25.25 (9.80),20.61 (8.39),4.05 (0.37),6.08 (0.35)
+Destructive,13,68.85 (31.60),51.23 (45.68),0.12 (0.05),24.30 (7.99),20.62 (7.74),4.54 (0.58),4.75 (0.91)
+Friendly,14,61.86 (21.70),42.93 (22.73),0.15 (0.04),21.35 (5.47),18.79 (5.96),3.12 (0.45),6.57 (0.45)
