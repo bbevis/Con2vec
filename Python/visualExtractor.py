@@ -114,10 +114,15 @@ class visual_features:
         """Extracts visual features from video frames."""
         timestamps = []
         face_blendshapes_results = []
+        emotions_results = []
         
         # Ensure face_blendshapes_names is always initialized
         if not self.face_blendshapes_names:
             self.face_blendshapes_names = [f"blendshape_{i}" for i in range(52)]
+
+        # Define emotion names
+        emotion_names = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+
 
         frame_id = 0
 
@@ -136,14 +141,27 @@ class visual_features:
             frame = cv2.resize(frame, (1920, 1080))
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
 
-            if frame_id % 15 == 0:  # Face detection runs every .5 sec
-                face_blendshapes_names, face_blendshapes_scores = self.face_cue_detector(mp_image)
-                if len(face_blendshapes_names) == 52:  # Ensure correct naming
-                    self.face_blendshapes_names = face_blendshapes_names  
+            # --- Face blendshape extraction ---
+            # if frame_id % 15 == 0:  # Face detection runs every .5 sec
+            face_blendshapes_names, face_blendshapes_scores = self.face_cue_detector(mp_image)
+            if len(face_blendshapes_names) == 52:  # Ensure correct naming
+                self.face_blendshapes_names = face_blendshapes_names  
             else:
                 face_blendshapes_scores = [0] * 52  # Default zero values
 
             face_blendshapes_results.append(face_blendshapes_scores)
+
+            # --- Emotion extraction ---
+            # if frame_id % 15 == 0 and self.enable_emotions:
+            try:
+                emotion_names_tmp, emotion_scores_tmp = self.emotion_detector(frame)
+                emotions_results.append(emotion_scores_tmp)
+            except Exception as e:
+                print(f"⚠️ DeepFace failed on frame {frame_id}, inserting NaNs")
+                emotions_results.append([np.nan] * len(emotion_names))
+            # else:
+                # emotions_results.append([np.nan] * len(emotion_names))
+
             frame_id += 1
 
         # Replace empty strings with NaN before converting to DataFrame
@@ -154,8 +172,14 @@ class visual_features:
 
         faceblendRes.insert(0, 'timestamp_ms', timestamps)
         
+        # Add emotion columns if enabled
+        if self.enable_emotions:
+            for idx, name in enumerate(emotion_names):
+                faceblendRes[f'emotion_{name}'] = [row[idx] for row in emotions_results]
+        
         # Remove rows where all extracted features are either NaN or zero (ignoring timestamp)
-        mask = faceblendRes[self.face_blendshapes_names].isna().all(axis=1) | (faceblendRes[self.face_blendshapes_names] == 0).all(axis=1)
+        # mask = faceblendRes[self.face_blendshapes_names].isna().all(axis=1) | (faceblendRes[self.face_blendshapes_names] == 0).all(axis=1)
+        mask = (faceblendRes[self.face_blendshapes_names] == 0).all(axis=1)
         faceblendRes = faceblendRes.loc[~mask]
         
         self.cap.release()
@@ -183,7 +207,9 @@ def process_video(mp4_filename):
         vf = visual_features(
             mp4_filename,
             'Pretrained_models/face_landmarker_v2_with_blendshapes.task',
-            'Pretrained_models/gesture_recognizer.task'
+            'Pretrained_models/gesture_recognizer.task',
+            enable_hand_gestures=False,
+            enable_emotions=True
         )
 
         # Extract features
@@ -239,8 +265,8 @@ if __name__ == '__main__':
 
     print(f"✅ Found {len(mp4_files)} MP4 files. Starting processing...")
 
-    # Use multi-processing for efficiency (limits to 6 processes)
-    with Pool(processes=6) as pool:
+    # Use multi-processing for efficiency
+    with Pool(processes=20) as pool:
         pool.map(process_video, mp4_files)
 
     print("All videos processed successfully!")
