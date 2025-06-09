@@ -22,7 +22,7 @@ Output/super_May22/DemoVideo
 *.so
 
 # Large files to ignore
-Output/super_May22/word_level_merged.csv
+word_level_merged.csv
 
 # API keys & other secrets
 config.py
