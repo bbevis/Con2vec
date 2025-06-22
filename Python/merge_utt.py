@@ -9,7 +9,8 @@ import warnings
 import traceback
 from multiprocessing import Lock
 import keywords
-from strategy_extractor import get_2024_politeness_strategy_features
+from strategy_extractor import get_2024_politeness_strategy_features, prep_data
+import difflib
 
 kw = keywords.kw
 
@@ -290,56 +291,88 @@ def reconstruct_turns(df_word_level):
 
 # === EXTRACT POLITENESS FEATURES ===
 
-def extract_politeness_features_for_turns(turn_texts):
+def extract_politeness_features_for_turns_wordlevel(df_word_level, turn_texts):
     rows = []
+    
+    feature_list = list(kw['word_matches'].keys()) + list(kw['spacy_pos'].keys()) + \
+                   list(kw['spacy_noneg'].keys()) + list(kw['spacy_neg_only'].keys()) + \
+                   list(kw['word_start'].keys()) + list(kw['spacy_tokentag'].keys()) + \
+                   ['Bare_Command', 'WH_Questions', 'YesNo_Questions']
+    
+    all_data = []
+    
     for _, row in tqdm(turn_texts.iterrows(), total=len(turn_texts)):
         pair_id, turn, speaker, full_text = row['PairID'], row['Turn'], row['Speaker'], row['FullText']
 
         try:
+            # Get features on preprocessed text
             prevalence, meta = get_2024_politeness_strategy_features(full_text)
             
             if not isinstance(prevalence, pd.Series):
-                print(f"⚠️ Skipping Turn {pair_id}-{turn}-{speaker}: unexpected prevalence type {type(prevalence)}")
+                print(f"⚠️ Skipping Turn {pair_id}-{turn}-{speaker}")
                 continue
 
-            data = {'PairID': pair_id, 'Turn': turn, 'Speaker': speaker}
-            data.update(prevalence.to_dict())
-            data['meta'] = meta['politeness_markers']
-            rows.append(data)
-        
+            # Filter word-level df to current turn
+            turn_df = df_word_level[(df_word_level['PairID'] == pair_id) &
+                                    (df_word_level['Turn'] == turn) &
+                                    (df_word_level['Speaker'] == speaker)].reset_index(drop=True)
+
+            original_tokens = turn_df['Word'].tolist()
+
+            # Apply same preprocessing as used in strategy_extractor
+            preprocessed_text = prep_data(full_text)
+            preprocessed_tokens = preprocessed_text.split()
+
+            # Get alignment mapping
+            alignment = align_tokens(' '.join(original_tokens), preprocessed_text)
+
+            # Build word-level feature matrix
+            word_level_features = pd.DataFrame(0, index=range(len(original_tokens)), columns=feature_list)
+
+            for feature, token_entries in meta['politeness_markers'].items():
+                for token_entry in token_entries:
+                    preprocessed_token_idx = token_entry[3] - 1  # spaCy is 1-indexed WORD_NUM
+                    # Find matching original word index
+                    matching = [orig_idx for orig_idx, prep_idx in alignment if prep_idx == preprocessed_token_idx]
+                    if matching:
+                        word_level_features.loc[matching[0], feature] = 1  # Assign feature
+
+            # Merge back to turn_df
+            turn_with_features = pd.concat([turn_df, word_level_features], axis=1)
+            all_data.append(turn_with_features)
+
         except Exception as e:
-            print(f"⚠️ Error extracting politeness for Turn {pair_id}-{turn}-{speaker}: {e}")
+            print(f"⚠️ Error processing Turn {pair_id}-{turn}-{speaker}: {e}")
             continue
 
-    return pd.DataFrame(rows)
+    final_df = pd.concat(all_data, ignore_index=True)
+    return final_df
 
 
 # ===  MAP BACK TO WORD LEVEL ===
 
+def align_tokens(original_text, preprocessed_text):
+    """
+    Align preprocessed tokens back to original tokens using SequenceMatcher.
+    Returns a list of (original_word_index, preprocessed_token_index) mappings.
+    """
 
-def merge_politeness_to_word_level(df_word_level, politeness_df, feature_list):
-    # Merge turn-level prevalence back first
-    merged = pd.merge(df_word_level, politeness_df.drop(columns=['meta']), on=['PairID','Turn','Speaker'], how='left')
+    original_tokens = original_text.split()
+    preprocessed_tokens = preprocessed_text.split()
 
-    # For each feature, initialize to 0 at word level
-    for feature in feature_list:
-        merged[feature] = 0
+    sm = difflib.SequenceMatcher(None, original_tokens, preprocessed_tokens)
+    alignment = []
 
-    # Now use the markers to assign 1s to specific words
-    for _, row in politeness_df.iterrows():
-        pair_id, turn, speaker, markers = row['PairID'], row['Turn'], row['Speaker'], row['meta']
-        for feature, token_entries in markers.items():
-            for token_entry in token_entries:
-                word_num = token_entry[3]
-                mask = (
-                    (merged['PairID'] == pair_id) &
-                    (merged['Turn'] == turn) &
-                    (merged['Speaker'] == speaker) &
-                    (merged['WORD_NUM'] == word_num)
-                )
-                merged.loc[mask, feature] = 1
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == 'equal':
+            for offset in range(i2 - i1):
+                alignment.append((i1 + offset, j1 + offset))
+        elif tag in ('replace', 'insert', 'delete'):
+            # Handle complicated cases: align as best effort (map multiple preprocessed tokens to one original word)
+            for offset in range(i2 - i1):
+                alignment.append((i1 + offset, j1))  # Assign first preprocessed token to original word
+    return alignment
 
-    return merged.drop(columns=['WORD_NUM'])
 
 
 def check_segment_pairs_error_log():
@@ -407,28 +440,18 @@ def main():
         df_video_by_person,
         audio_to_video_id,
         max_workers=max_workers,
-        n_files=2  # Change to a number for debugging
+        n_files=2  # Change to full run when ready
     )
 
+    # Reconstruct turns and extract politeness features word-level
     df_word_level, turn_texts = reconstruct_turns(df_word_level)
-    politeness_df = extract_politeness_features_for_turns(turn_texts)
+    df_word_level = extract_politeness_features_for_turns_wordlevel(df_word_level, turn_texts)
 
-    # Build feature list from all categories
-    feature_list = list(kw['word_matches'].keys()) + list(kw['spacy_pos'].keys()) + \
-                list(kw['spacy_noneg'].keys()) + list(kw['spacy_neg_only'].keys()) + \
-                list(kw['word_start'].keys()) + list(kw['spacy_tokentag'].keys()) + \
-                ['Bare_Command', 'WH_Questions', 'YesNo_Questions']
-
-
-    df_word_level = merge_politeness_to_word_level(df_word_level, politeness_df, feature_list)
-
-
-    # Remove speaker emotion columns (keep only listener emotion features)
-    # Clean final word-level dataframe
+    # Drop unnecessary columns
     df_word_level = df_word_level.drop(columns=['person_id', 'audio_person_id', 'video_person_id', 'SourceFile'], errors='ignore')
     df_word_level = df_word_level.drop(columns=emotion_columns, errors='ignore')
 
-    # Save final word-level result
+    # Save
     output_word_level_path = os.path.join(base_dir, "word_level_merged.csv")
     df_word_level.to_csv(output_word_level_path, index=False)
     
@@ -436,6 +459,7 @@ def main():
 
     # Check error log
     check_segment_pairs_error_log()
+
 
 
 if __name__ == "__main__":
