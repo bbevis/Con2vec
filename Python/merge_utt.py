@@ -8,6 +8,10 @@ from functools import partial
 import warnings
 import traceback
 from multiprocessing import Lock
+import keywords
+from strategy_extractor import get_2024_politeness_strategy_features
+
+kw = keywords.kw
 
 # === CONFIGURATION ===
 
@@ -28,7 +32,7 @@ exclude_columns = ['Time_s', 'person_id', 'audio_person_id', 'video_person_id']
 log_lock = Lock()
 log_file_path = os.path.join(base_dir, "segment_pairs_errors.log")
 
-# === STEP 1: VOCAL + VIDEO MERGE (parallelized) ===
+# === VOCAL + VIDEO MERGE (parallelized) ===
 
 def merge_single_pair(row_dict):
     """Merge vocal + video for one LUT row."""
@@ -102,7 +106,7 @@ def load_and_merge_vocal_video_parallel(max_workers=12):
         print("⚠️ No merged vocal+video data.")
         return None
 
-# === STEP 2: SEGMENT_PAIRS PROCESSING (parallelized) ===
+# === SEGMENT_PAIRS PROCESSING (parallelized) ===
 
 def aggregate_video_features_for_words(video_df, seg_df, columns_to_keep=None):
     """
@@ -114,8 +118,6 @@ def aggregate_video_features_for_words(video_df, seg_df, columns_to_keep=None):
     - seg_df: Segment_pairs DataFrame with Start Time and End Time columns
     - columns_to_keep: list of columns to aggregate (optional). If None, use all numeric columns.
     """
-    import pandas as pd
-    import numpy as np
 
     if video_df.empty:
         return pd.DataFrame(index=seg_df.index)
@@ -229,7 +231,7 @@ def process_single_segment_file(args):
                 word_row[col + '_listener'] = val
             
             # Add SourceFile
-            word_row['SourceFile'] = os.path.basename(seg_file)
+            # word_row['SourceFile'] = os.path.basename(seg_file)
             
             # Add speaker/listener IDs
             word_row['person_id'] = speaker_id
@@ -248,15 +250,18 @@ def process_single_segment_file(args):
     
     return word_rows
 
-def process_segment_pairs_parallel(df_audio_by_person, df_video_by_person, audio_to_video_id, max_workers=12):
+def process_segment_pairs_parallel(df_audio_by_person, df_video_by_person, audio_to_video_id, max_workers=12, n_files = None):
     """Process Segment_pairs files in parallel."""
-    print("\n=== Step 2: Processing Segment_pairs files (simplified) ===")
+    print("\n=== Processing Segment_pairs files (simplified) ===")
     
     segment_files = glob.glob(os.path.join(segment_pairs_dir, "*.csv"))
     print(f"Found {len(segment_files)} Segment_pairs files.")
     
     # For debugging: process first 2 files only
-    # segment_files = segment_files[:2]
+    if n_files != None:
+        print(f"⚠️ Debug mode: processing only the first {n_files} Segment_pairs files.")
+        segment_files = segment_files[:n_files]
+
     
     args = [
         (seg_file, df_audio_by_person, df_video_by_person, audio_to_video_id)
@@ -273,6 +278,68 @@ def process_segment_pairs_parallel(df_audio_by_person, df_video_by_person, audio
     df_word_level = pd.DataFrame(all_word_rows)
     print(f"\n✅ Final word-level dataframe: {df_word_level.shape}")
     return df_word_level
+
+# === RECONSTRUCT TURNS ===
+
+def reconstruct_turns(df_word_level):
+    df_word_level = df_word_level.sort_values(['PairID', 'Turn', 'Speaker', 'Start Time']).reset_index(drop=True)
+    df_word_level['WORD_NUM'] = df_word_level.groupby(['PairID','Turn','Speaker']).cumcount() + 1
+    turn_texts = df_word_level.groupby(['PairID','Turn','Speaker']).agg({'Word': lambda x: ' '.join(x)}).reset_index()
+    turn_texts = turn_texts.rename(columns={'Word': 'FullText'})
+    return df_word_level, turn_texts
+
+# === EXTRACT POLITENESS FEATURES ===
+
+def extract_politeness_features_for_turns(turn_texts):
+    rows = []
+    for _, row in tqdm(turn_texts.iterrows(), total=len(turn_texts)):
+        pair_id, turn, speaker, full_text = row['PairID'], row['Turn'], row['Speaker'], row['FullText']
+
+        try:
+            prevalence, meta = get_2024_politeness_strategy_features(full_text)
+            
+            if not isinstance(prevalence, pd.Series):
+                print(f"⚠️ Skipping Turn {pair_id}-{turn}-{speaker}: unexpected prevalence type {type(prevalence)}")
+                continue
+
+            data = {'PairID': pair_id, 'Turn': turn, 'Speaker': speaker}
+            data.update(prevalence.to_dict())
+            data['meta'] = meta['politeness_markers']
+            rows.append(data)
+        
+        except Exception as e:
+            print(f"⚠️ Error extracting politeness for Turn {pair_id}-{turn}-{speaker}: {e}")
+            continue
+
+    return pd.DataFrame(rows)
+
+
+# ===  MAP BACK TO WORD LEVEL ===
+
+
+def merge_politeness_to_word_level(df_word_level, politeness_df, feature_list):
+    # Merge turn-level prevalence back first
+    merged = pd.merge(df_word_level, politeness_df.drop(columns=['meta']), on=['PairID','Turn','Speaker'], how='left')
+
+    # For each feature, initialize to 0 at word level
+    for feature in feature_list:
+        merged[feature] = 0
+
+    # Now use the markers to assign 1s to specific words
+    for _, row in politeness_df.iterrows():
+        pair_id, turn, speaker, markers = row['PairID'], row['Turn'], row['Speaker'], row['meta']
+        for feature, token_entries in markers.items():
+            for token_entry in token_entries:
+                word_num = token_entry[3]
+                mask = (
+                    (merged['PairID'] == pair_id) &
+                    (merged['Turn'] == turn) &
+                    (merged['Speaker'] == speaker) &
+                    (merged['WORD_NUM'] == word_num)
+                )
+                merged.loc[mask, feature] = 1
+
+    return merged.drop(columns=['WORD_NUM'])
 
 
 def check_segment_pairs_error_log():
@@ -307,7 +374,7 @@ def main():
     max_workers = min(20, os.cpu_count() - 2)
     print(f"\n=== Using {max_workers} cores for parallel processing ===")
 
-    # Step 0: Load LUT and build audio_to_video_id mapping
+    # Load LUT and build audio_to_video_id mapping
     lut = pd.read_csv(lut_path)
     audio_to_video_id = {
         row['audio_filename'].replace('.csv', ''): row['video_filename'].replace('.csv', '')
@@ -316,14 +383,13 @@ def main():
     print(f"\n✅ Loaded LUT: {len(lut)} rows")
     print(f"✅ Built audio_to_video_id mapping for {len(audio_to_video_id)} audio_person_ids")
 
-    # Step 1: Load and merge vocal + video
+    # Load and merge vocal + video
     df_all_merged = load_and_merge_vocal_video_parallel(max_workers=max_workers)
     if df_all_merged is None:
         print("❌ Aborting — no vocal+video data.")
         return
     
-    
-    # Step 1.5: Pre-partition df_all_merged
+    # Pre-partition df_all_merged
     print("\n=== Pre-partitioning df_all_merged by person ===")
     df_audio_by_person = {
         person_id: df_all_merged[df_all_merged['audio_person_id'] == person_id].sort_values('Time_s')
@@ -335,26 +401,44 @@ def main():
     }
     print(f"✅ Partitioned {len(df_audio_by_person)} audio_person_ids and {len(df_video_by_person)} video_person_ids")
 
-    # Step 2: Process Segment_pairs in parallel
+    # Process Segment_pairs in parallel
     df_word_level = process_segment_pairs_parallel(
         df_audio_by_person,
         df_video_by_person,
         audio_to_video_id,
-        max_workers=max_workers
+        max_workers=max_workers,
+        n_files=2  # Change to a number for debugging
     )
 
-    # Step 3: Save final word-level result
+    df_word_level, turn_texts = reconstruct_turns(df_word_level)
+    politeness_df = extract_politeness_features_for_turns(turn_texts)
+
+    # Build feature list from all categories
+    feature_list = list(kw['word_matches'].keys()) + list(kw['spacy_pos'].keys()) + \
+                list(kw['spacy_noneg'].keys()) + list(kw['spacy_neg_only'].keys()) + \
+                list(kw['word_start'].keys()) + list(kw['spacy_tokentag'].keys()) + \
+                ['Bare_Command', 'WH_Questions', 'YesNo_Questions']
+
+
+    df_word_level = merge_politeness_to_word_level(df_word_level, politeness_df, feature_list)
+
+
+    # Remove speaker emotion columns (keep only listener emotion features)
+    # Clean final word-level dataframe
+    df_word_level = df_word_level.drop(columns=['person_id', 'audio_person_id', 'video_person_id', 'SourceFile'], errors='ignore')
+    df_word_level = df_word_level.drop(columns=emotion_columns, errors='ignore')
+
+    # Save final word-level result
     output_word_level_path = os.path.join(base_dir, "word_level_merged.csv")
     df_word_level.to_csv(output_word_level_path, index=False)
+    
     print(f"\n✅ Saved word-level merged data to: {output_word_level_path}")
 
-    # Step 4: Check error log
+    # Check error log
     check_segment_pairs_error_log()
 
 
-
-# === RUN ===
 if __name__ == "__main__":
     main()
-    # check_segment_pairs_error_log()
+
 
