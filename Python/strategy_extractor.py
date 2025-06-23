@@ -169,28 +169,52 @@ def bare_command(spacy_df):
 
 def Question(spacy_df):
     """
-    Counts number of prespecified question words
+    Rule-based detection of WH and Yes/No questions.
+    Assigns feature counts directly to trigger words (TOKEN_INDEX).
+
+    This version does NOT rely on dependency parsing, position in sentence, or spaCy tags.
+    It simply looks for WH and Yes/No question trigger patterns.
     """
 
-    # question_keywords = set([' who ', ' what ', ' where ', ' when ', ' why ', ' how ', ' which '])
-    search_tags = set(['WRB', 'WP', 'WDT'])
-    
-    # subset sentence numbers and get the first word from that sentence if the last word is a question mark.
-    sent_idx = spacy_df['SENT_NUM'][(spacy_df['TOKEN'] == '?') & (spacy_df['POS'] == 'PUNCT')]
-    
-    # create new column wh question. If tag is in list of search_tags, return TOKEN_INDEX
-    # Use TOKEN_INDEX to add 1 to correct row
+    wh_words = {'what', 'who', 'where', 'when', 'why', 'how', 'which'}
+    wh_followers = {
+        'what': {'are', 'is', 'do', 'does', 'can', 'should', 'might'},
+        'who': {'is', 'are', 'was', 'can', 'should'},
+        'where': {'is', 'are', 'can', 'should'},
+        'when': {'is', 'are', 'can', 'should'},
+        'why': {'is', 'are', 'do', 'does', 'can', 'might', 'would'},
+        'how': {'is', 'are', 'do', 'does', 'can', 'should', 'would'},
+        'which': {'is', 'are', 'was', 'can', 'should'}
+    }
+
+    yesno_aux = {'do', 'does', 'did', 'have', 'has', 'had',
+                 'can', 'could', 'may', 'might', 'shall', 'should',
+                 'will', 'would', 'is', 'are', 'was', 'were', 'am'}
+
+    pronoun_followers = {'i', 'you', 'we', 'he', 'she', 'they', 'it'}
+
+    # Initialize columns
     spacy_df['WH_Questions'] = 0
     spacy_df['YesNo_Questions'] = 0
-    
-    for sent_num in sent_idx:
-        idx = spacy_df['TOKEN_INDEX'][(spacy_df['SENT_NUM'] == sent_num) & (spacy_df['WORD_NUM'] == 1)].item()
-        if spacy_df['TAG'][(spacy_df['SENT_NUM'] == sent_num) & (spacy_df['WORD_NUM'] == 1)].item() in search_tags:
-           spacy_df.loc[spacy_df['TOKEN_INDEX'].apply(lambda x: x == idx), 'WH_Questions'] += 1
-        else:
-            spacy_df.loc[spacy_df['TOKEN_INDEX'].apply(lambda x: x == idx), 'YesNo_Questions'] += 1
-        
+
+    tokens = spacy_df['TOKEN'].astype(str).str.lower().tolist()
+    indices = spacy_df['TOKEN_INDEX'].tolist()
+
+    for i, word in enumerate(tokens):
+        # WH questions
+        if word in wh_words and i + 1 < len(tokens):
+            follower = tokens[i+1]
+            if follower in wh_followers[word]:
+                spacy_df.loc[spacy_df['TOKEN_INDEX'] == indices[i], 'WH_Questions'] += 1
+
+        # Yes/No questions
+        if word in yesno_aux and i + 1 < len(tokens):
+            follower = tokens[i+1]
+            if follower in pronoun_followers:
+                spacy_df.loc[spacy_df['TOKEN_INDEX'] == indices[i], 'YesNo_Questions'] += 1
+
     return spacy_df
+
 
 def adverb_limiter(keywords, spacy_df):
     """

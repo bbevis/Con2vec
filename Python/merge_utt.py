@@ -11,6 +11,7 @@ from multiprocessing import Lock
 import keywords
 from strategy_extractor import get_2024_politeness_strategy_features, prep_data
 import difflib
+from collections import defaultdict
 
 kw = keywords.kw
 
@@ -292,52 +293,70 @@ def reconstruct_turns(df_word_level):
 # === EXTRACT POLITENESS FEATURES ===
 
 def extract_politeness_features_for_turns_wordlevel(df_word_level, turn_texts):
-    rows = []
+    from collections import defaultdict
     
-    feature_list = list(kw['word_matches'].keys()) + list(kw['spacy_pos'].keys()) + \
-                   list(kw['spacy_noneg'].keys()) + list(kw['spacy_neg_only'].keys()) + \
-                   list(kw['word_start'].keys()) + list(kw['spacy_tokentag'].keys()) + \
-                   ['Bare_Command', 'WH_Questions', 'YesNo_Questions']
+    # Build feature list
+    feature_list = (
+        list(kw['word_matches'].keys()) + 
+        list(kw['spacy_pos'].keys()) + 
+        list(kw['spacy_noneg'].keys()) + 
+        list(kw['spacy_neg_only'].keys()) + 
+        list(kw['word_start'].keys()) + 
+        ['Adverb_Limiters', 'Bare_Command', 'WH_Questions', 'YesNo_Questions']
+    )
     
     all_data = []
-    
+
     for _, row in tqdm(turn_texts.iterrows(), total=len(turn_texts)):
         pair_id, turn, speaker, full_text = row['PairID'], row['Turn'], row['Speaker'], row['FullText']
 
         try:
-            # Get features on preprocessed text
+            # Run feature extraction
             prevalence, meta = get_2024_politeness_strategy_features(full_text)
-            
             if not isinstance(prevalence, pd.Series):
                 print(f"⚠️ Skipping Turn {pair_id}-{turn}-{speaker}")
                 continue
 
-            # Filter word-level df to current turn
-            turn_df = df_word_level[(df_word_level['PairID'] == pair_id) &
-                                    (df_word_level['Turn'] == turn) &
-                                    (df_word_level['Speaker'] == speaker)].reset_index(drop=True)
+            # Get corresponding word-level rows for this turn
+            turn_df = df_word_level[
+                (df_word_level['PairID'] == pair_id) & 
+                (df_word_level['Turn'] == turn) & 
+                (df_word_level['Speaker'] == speaker)
+            ].reset_index(drop=True)
 
-            original_tokens = turn_df['Word'].tolist()
+            word_tokens = turn_df['Word'].str.lower().tolist()
+            word_counter = defaultdict(int)
 
-            # Apply same preprocessing as used in strategy_extractor
-            preprocessed_text = prep_data(full_text)
-            preprocessed_tokens = preprocessed_text.split()
-
-            # Get alignment mapping
-            alignment = align_tokens(' '.join(original_tokens), preprocessed_text)
-
-            # Build word-level feature matrix
-            word_level_features = pd.DataFrame(0, index=range(len(original_tokens)), columns=feature_list)
+            # Initialize all features to 0
+            word_level_features = pd.DataFrame(0, index=range(len(word_tokens)), columns=feature_list)
 
             for feature, token_entries in meta['politeness_markers'].items():
                 for token_entry in token_entries:
-                    preprocessed_token_idx = token_entry[3] - 1  # spaCy is 1-indexed WORD_NUM
-                    # Find matching original word index
-                    matching = [orig_idx for orig_idx, prep_idx in alignment if prep_idx == preprocessed_token_idx]
-                    if matching:
-                        word_level_features.loc[matching[0], feature] = 1  # Assign feature
+                    token_word = token_entry[0].lower()
 
-            # Merge back to turn_df
+                    # How many times has this word appeared so far
+                    current_count = sum(1 for w in word_tokens if w == token_word)
+
+                    if current_count == 0:
+                        # This word doesn't exist in actual turn tokens
+                        continue
+
+                    # Find which instance of this token_word we are mapping (i.e. rank match)
+                    target_rank = word_counter[token_word] + 1
+
+                    match_idx = None
+                    running_count = 0
+                    for idx, word in enumerate(word_tokens):
+                        if word == token_word:
+                            running_count += 1
+                            if running_count == target_rank:
+                                match_idx = idx
+                                break
+
+                    if match_idx is not None:
+                        word_level_features.loc[match_idx, feature] = 1
+                        word_counter[token_word] += 1  # update for next occurrence
+
             turn_with_features = pd.concat([turn_df, word_level_features], axis=1)
             all_data.append(turn_with_features)
 
@@ -347,6 +366,7 @@ def extract_politeness_features_for_turns_wordlevel(df_word_level, turn_texts):
 
     final_df = pd.concat(all_data, ignore_index=True)
     return final_df
+
 
 
 # ===  MAP BACK TO WORD LEVEL ===
@@ -440,18 +460,21 @@ def main():
         df_video_by_person,
         audio_to_video_id,
         max_workers=max_workers,
-        n_files=2  # Change to full run when ready
+        n_files=None  # Set to None to process full dataset
     )
 
-    # Reconstruct turns and extract politeness features word-level
+    # Reconstruct turns
     df_word_level, turn_texts = reconstruct_turns(df_word_level)
+
+    # Extract word-level politeness features directly (this replaces turn-level)
     df_word_level = extract_politeness_features_for_turns_wordlevel(df_word_level, turn_texts)
 
-    # Drop unnecessary columns
+    # Drop unwanted columns
     df_word_level = df_word_level.drop(columns=['person_id', 'audio_person_id', 'video_person_id', 'SourceFile'], errors='ignore')
     df_word_level = df_word_level.drop(columns=emotion_columns, errors='ignore')
+    df_word_level = df_word_level.drop(columns=['WORD_NUM'], errors='ignore')
 
-    # Save
+    # Save final word-level result
     output_word_level_path = os.path.join(base_dir, "word_level_merged.csv")
     df_word_level.to_csv(output_word_level_path, index=False)
     
@@ -459,7 +482,6 @@ def main():
 
     # Check error log
     check_segment_pairs_error_log()
-
 
 
 if __name__ == "__main__":
