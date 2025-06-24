@@ -23,6 +23,7 @@ Output/super_May22/DemoVideo
 
 # Large files to ignore
 word_level_merged.csv
+Output/super_May22/word_level_merged.csv
 
 # API keys & other secrets
 config.py
